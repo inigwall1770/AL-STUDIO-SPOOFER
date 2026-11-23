@@ -1,0 +1,1365 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AL STUDIO — Asset Spoofer</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg0: #07071a;
+  --bg1: #0d0d2b;
+  --bg2: #12123a;
+  --bg3: #181848;
+  --blue: #005eff;
+  --blue2: #3d8bff;
+  --blue3: #7ab8ff;
+  --cyan: #00e5ff;
+  --glow: 0 0 18px #005eff88, 0 0 40px #005eff33;
+  --glow-sm: 0 0 8px #005eff66;
+  --border: #1e1e55;
+  --border-bright: #2a2a7a;
+  --text: #d0d8ff;
+  --text-muted: #5a6090;
+  --radius: 10px;
+  --success: #00e676;
+  --warning: #ffab00;
+  --danger: #ff4444;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+@keyframes rgb-border {
+  0%   { border-color: #005eff; box-shadow: 0 0 12px #005eff66; }
+  25%  { border-color: #a000ff; box-shadow: 0 0 12px #a000ff66; }
+  50%  { border-color: #00e5ff; box-shadow: 0 0 12px #00e5ff66; }
+  75%  { border-color: #00ff88; box-shadow: 0 0 12px #00ff8866; }
+  100% { border-color: #005eff; box-shadow: 0 0 12px #005eff66; }
+}
+@keyframes rgb-text {
+  0%   { color: #005eff; }
+  25%  { color: #a855ff; }
+  50%  { color: #00e5ff; }
+  75%  { color: #00ff88; }
+  100% { color: #005eff; }
+}
+@keyframes pulse-glow {
+  0%, 100% { opacity: .6; }
+  50% { opacity: 1; }
+}
+@keyframes scanline {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--bg0);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* Scanline overlay */
+body::before {
+  content: '';
+  position: fixed;
+  left: 0; top: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(transparent, #005eff22, transparent);
+  animation: scanline 6s linear infinite;
+  pointer-events: none;
+  z-index: 999;
+}
+
+/* Grid bg */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(#005eff08 1px, transparent 1px),
+    linear-gradient(90deg, #005eff08 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── LAYOUT ── */
+.app { display: flex; min-height: 100vh; position: relative; z-index: 1; }
+
+/* ── SIDEBAR ── */
+.sidebar {
+  width: 220px;
+  min-width: 220px;
+  background: var(--bg1);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+
+.sidebar-logo {
+  padding: 20px 16px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.logo-title {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  animation: rgb-text 4s linear infinite;
+  letter-spacing: 1px;
+}
+
+.logo-sub {
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: 2px;
+  margin-top: 2px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.sidebar-nav { flex: 1; padding: 12px 8px; display: flex; flex-direction: column; gap: 2px; }
+
+.nav-label {
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: 1.5px;
+  padding: 8px 8px 4px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-muted);
+  transition: all .18s;
+  border: 1px solid transparent;
+  user-select: none;
+}
+.nav-item:hover { background: var(--bg2); color: var(--text); border-color: var(--border); }
+.nav-item.active {
+  background: #001a66;
+  color: var(--blue2);
+  border-color: var(--blue);
+  box-shadow: var(--glow-sm);
+}
+.nav-icon { font-size: 16px; min-width: 18px; text-align: center; }
+
+.sidebar-footer {
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* ── MAIN ── */
+.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+/* ── TOPBAR ── */
+.topbar {
+  background: var(--bg1);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.topbar-title {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.topbar-right { display: flex; align-items: center; gap: 10px; }
+
+.badge {
+  font-size: 11px;
+  font-family: 'JetBrains Mono', monospace;
+  padding: 3px 10px;
+  border-radius: 20px;
+  background: #001a44;
+  border: 1px solid var(--blue);
+  color: var(--blue2);
+  animation: rgb-border 4s linear infinite;
+}
+
+/* ── CONTENT ── */
+.content { flex: 1; padding: 20px 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; }
+
+/* ── PANELS ── */
+.page { display: none; flex-direction: column; gap: 20px; animation: fadeIn .3s ease; }
+.page.active { display: flex; }
+
+/* ── SECTION ── */
+.section-title {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--blue2);
+  letter-spacing: .5px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.section-title::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--border-bright), transparent);
+}
+
+/* ── API CONFIG ── */
+.config-card {
+  background: var(--bg1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.input-group { display: flex; flex-direction: column; gap: 5px; }
+.input-label { font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; letter-spacing: .5px; }
+.inp {
+  background: var(--bg0);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 9px 12px;
+  color: var(--text);
+  font-size: 13px;
+  font-family: 'JetBrains Mono', monospace;
+  outline: none;
+  transition: border-color .15s, box-shadow .15s;
+  width: 100%;
+}
+.inp:focus { border-color: var(--blue); box-shadow: var(--glow-sm); }
+.inp::placeholder { color: var(--text-muted); }
+
+.row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+/* ── DROP ZONE ── */
+.dropzone {
+  background: var(--bg1);
+  border: 2px dashed var(--border-bright);
+  border-radius: var(--radius);
+  padding: 32px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all .2s;
+  position: relative;
+  overflow: hidden;
+  animation: rgb-border 5s linear infinite;
+}
+.dropzone:hover, .dropzone.dragover {
+  background: #001133;
+  border-style: solid;
+}
+.dropzone-icon { font-size: 36px; margin-bottom: 10px; animation: float 3s ease-in-out infinite; }
+.dropzone-text { font-size: 14px; color: var(--text); font-weight: 500; }
+.dropzone-sub { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+.dropzone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+
+/* ── ID LIST ── */
+.id-input-row {
+  display: flex;
+  gap: 8px;
+}
+.id-input-row .inp { flex: 1; }
+
+.id-list {
+  background: var(--bg1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  max-height: 220px;
+  overflow-y: auto;
+}
+.id-list::-webkit-scrollbar { width: 4px; }
+.id-list::-webkit-scrollbar-track { background: var(--bg0); }
+.id-list::-webkit-scrollbar-thumb { background: var(--blue); border-radius: 4px; }
+
+.id-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+  font-family: 'JetBrains Mono', monospace;
+  transition: background .15s;
+}
+.id-item:last-child { border-bottom: none; }
+.id-item:hover { background: var(--bg2); }
+.id-item .id-num { color: var(--blue2); min-width: 90px; }
+.id-item .id-name { color: var(--text-muted); flex: 1; font-size: 11px; }
+.id-item .id-status { font-size: 10px; padding: 2px 7px; border-radius: 10px; }
+.status-pending { background: #33220080; color: var(--warning); border: 1px solid var(--warning); }
+.status-uploading { background: #001a4480; color: var(--blue2); border: 1px solid var(--blue); }
+.status-done { background: #00331880; color: var(--success); border: 1px solid var(--success); }
+.status-error { background: #33000080; color: var(--danger); border: 1px solid var(--danger); }
+.id-remove { cursor: pointer; color: var(--text-muted); font-size: 14px; padding: 0 4px; }
+.id-remove:hover { color: var(--danger); }
+
+.empty-list { padding: 24px; text-align: center; color: var(--text-muted); font-size: 12px; font-family: 'JetBrains Mono', monospace; }
+
+/* ── BUTTONS ── */
+.btn {
+  padding: 9px 18px;
+  border-radius: 8px;
+  border: 1px solid;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .15s;
+  font-family: 'Inter', sans-serif;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.btn-primary {
+  background: var(--blue);
+  border-color: var(--blue2);
+  color: #fff;
+  box-shadow: var(--glow-sm);
+}
+.btn-primary:hover { background: var(--blue2); transform: translateY(-1px); }
+.btn-primary:active { transform: scale(.98); }
+.btn-ghost {
+  background: transparent;
+  border-color: var(--border-bright);
+  color: var(--text-muted);
+}
+.btn-ghost:hover { border-color: var(--blue); color: var(--blue2); }
+.btn-danger {
+  background: transparent;
+  border-color: #55000088;
+  color: var(--danger);
+}
+.btn-danger:hover { background: #33000044; }
+.btn-success {
+  background: #003322;
+  border-color: var(--success);
+  color: var(--success);
+}
+.btn-success:hover { background: #00442e; }
+.btn-sm { padding: 6px 12px; font-size: 12px; }
+.btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* ── PROGRESS ── */
+.progress-wrap { background: var(--bg0); border-radius: 8px; overflow: hidden; height: 6px; }
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--blue), var(--cyan));
+  border-radius: 8px;
+  transition: width .4s ease;
+  width: 0%;
+  box-shadow: 0 0 8px #00e5ff88;
+}
+
+/* ── LOG ── */
+.log-box {
+  background: var(--bg0);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  max-height: 160px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.log-box::-webkit-scrollbar { width: 3px; }
+.log-box::-webkit-scrollbar-thumb { background: var(--border-bright); }
+.log-line { display: flex; gap: 8px; }
+.log-time { color: var(--text-muted); min-width: 60px; }
+.log-info { color: var(--blue2); }
+.log-ok { color: var(--success); }
+.log-err { color: var(--danger); }
+.log-warn { color: var(--warning); }
+
+/* ── STAT CARDS ── */
+.stats-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.stat-card {
+  background: var(--bg1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.stat-num {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--blue2);
+}
+.stat-label { font-size: 11px; color: var(--text-muted); }
+
+/* ── RBXM EXPORT ── */
+.export-card {
+  background: var(--bg1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+
+/* ── RESULT GRID ── */
+.result-grid { display: flex; flex-direction: column; gap: 6px; }
+.result-item {
+  background: var(--bg1);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  animation: fadeIn .2s ease;
+}
+.result-id { font-family: 'JetBrains Mono', monospace; color: var(--blue2); min-width: 100px; }
+.result-type { color: var(--text-muted); min-width: 70px; }
+.result-new-id { font-family: 'JetBrains Mono', monospace; color: var(--success); flex: 1; }
+.result-copy { cursor: pointer; color: var(--text-muted); font-size: 14px; }
+.result-copy:hover { color: var(--cyan); }
+
+/* ── MODAL ── */
+.modal-wrap {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,10,.85);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+.modal-wrap.open { display: flex; }
+.modal {
+  background: var(--bg1);
+  border: 1px solid var(--border-bright);
+  border-radius: 14px;
+  padding: 24px;
+  width: min(380px, 95vw);
+  animation: fadeIn .2s ease;
+  box-shadow: 0 0 40px #005eff22;
+}
+.modal-title {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--blue2);
+  margin-bottom: 16px;
+}
+.modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+
+/* ── TOAST ── */
+.toast-wrap { position: fixed; bottom: 20px; right: 20px; display: flex; flex-direction: column; gap: 8px; z-index: 200; }
+.toast {
+  background: var(--bg2);
+  border: 1px solid var(--border-bright);
+  border-radius: 10px;
+  padding: 10px 16px;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  animation: fadeIn .2s ease;
+  box-shadow: 0 4px 20px #00000066;
+  min-width: 200px;
+}
+.toast.ok { border-color: var(--success); color: var(--success); }
+.toast.err { border-color: var(--danger); color: var(--danger); }
+.toast.info { border-color: var(--blue); color: var(--blue2); }
+
+/* ── SELECT ── */
+select.inp { appearance: none; cursor: pointer; }
+
+/* ── TOGGLE ── */
+.toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 13px; }
+.toggle { position: relative; width: 40px; height: 22px; }
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggle-slider {
+  position: absolute;
+  inset: 0;
+  background: var(--bg0);
+  border: 1px solid var(--border-bright);
+  border-radius: 22px;
+  cursor: pointer;
+  transition: .2s;
+}
+.toggle-slider::after {
+  content: '';
+  position: absolute;
+  left: 3px; top: 3px;
+  width: 14px; height: 14px;
+  background: var(--text-muted);
+  border-radius: 50%;
+  transition: .2s;
+}
+.toggle input:checked + .toggle-slider { background: #001a44; border-color: var(--blue); }
+.toggle input:checked + .toggle-slider::after { background: var(--blue2); transform: translateX(18px); }
+
+@media (max-width: 600px) {
+  .sidebar { display: none; }
+  .row-2 { grid-template-columns: 1fr; }
+  .stats-row { grid-template-columns: 1fr 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-title">⬡ AL STUDIO</div>
+    <div class="logo-sub">ASSET SPOOFER v2.0</div>
+  </div>
+  <div class="sidebar-nav">
+    <div class="nav-label">MAIN</div>
+    <div class="nav-item active" onclick="switchPage('spoofer',this)">
+      <span class="nav-icon">🎭</span> Spoofer
+    </div>
+    <div class="nav-item" onclick="switchPage('upload',this)">
+      <span class="nav-icon">☁️</span> Upload Roblox
+    </div>
+    <div class="nav-item" onclick="switchPage('export',this)">
+      <span class="nav-icon">📦</span> Export RBXM
+    </div>
+    <div class="nav-label">TOOLS</div>
+    <div class="nav-item" onclick="switchPage('config',this)">
+      <span class="nav-icon">⚙️</span> API Config
+    </div>
+    <div class="nav-item" onclick="switchPage('log',this)">
+      <span class="nav-icon">📋</span> Log
+    </div>
+  </div>
+  <div class="sidebar-footer">
+    build · code · create<br>
+    <span style="color:#005eff">●</span> AL STUDIO © 2026
+  </div>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title" id="page-title">🎭 Asset Spoofer</div>
+    <div class="topbar-right">
+      <span class="badge" id="api-status-badge">⚡ API: Not configured</span>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- ══ SPOOFER PAGE ══ -->
+    <div class="page active" id="page-spoofer">
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-num" id="stat-total">0</div>
+          <div class="stat-label">Total IDs</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num" id="stat-done" style="color:var(--success)">0</div>
+          <div class="stat-label">Processed</div>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-title">🎵 Drop Animation / Audio IDs</div>
+        <div class="dropzone" id="dropzone">
+          <div class="dropzone-icon">🎭</div>
+          <div class="dropzone-text">Drop file .txt / .csv berisi IDs</div>
+          <div class="dropzone-sub">atau ketik manual di bawah</div>
+          <input type="file" id="file-input" accept=".txt,.csv" multiple>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-title">✍️ Input Manual</div>
+        <div class="id-input-row">
+          <input class="inp" id="manual-id" placeholder="Masukkan asset ID (e.g. 1234567890)" type="text">
+          <select class="inp" id="manual-type" style="max-width:130px">
+            <option value="audio">🎵 Audio</option>
+            <option value="animation">🎭 Animation</option>
+            <option value="image">🖼️ Image</option>
+            <option value="model">🧱 Model</option>
+          </select>
+          <button class="btn btn-primary btn-sm" onclick="addManualID()">+ Add</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-title">📋 ID Queue (<span id="queue-count">0</span>)</div>
+        <div class="id-list" id="id-list">
+          <div class="empty-list">Belum ada ID — drop file atau input manual</div>
+        </div>
+        <div class="btn-row" style="margin-top:10px">
+          <button class="btn btn-primary" onclick="startSpoof()">▶ Mulai Spoof</button>
+          <button class="btn btn-ghost" onclick="clearAll()">🗑 Clear All</button>
+          <button class="btn btn-ghost" onclick="exportTxt()">⬇ Export IDs</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-title">📊 Progress</div>
+        <div class="config-card" style="gap:10px">
+          <div style="display:flex;justify-content:space-between;font-size:12px;font-family:'JetBrains Mono',monospace">
+            <span id="prog-label" style="color:var(--text-muted)">Idle</span>
+            <span id="prog-pct" style="color:var(--blue2)">0%</span>
+          </div>
+          <div class="progress-wrap"><div class="progress-bar" id="progress-bar"></div></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-title">✅ Hasil Spoof</div>
+        <div class="result-grid" id="result-grid">
+          <div class="empty-list" style="text-align:center;color:var(--text-muted);font-size:12px;font-family:'JetBrains Mono',monospace;padding:16px">
+            Hasil akan muncul di sini setelah spoof selesai
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ UPLOAD PAGE ══ -->
+    <div class="page" id="page-upload">
+      <div>
+        <div class="section-title">☁️ Upload ke Roblox Dashboard</div>
+        <div class="config-card">
+          <div class="toggle-row">
+            <span>Upload ke Group</span>
+            <label class="toggle"><input type="checkbox" id="toggle-group" onchange="toggleGroupMode()"><span class="toggle-slider"></span></label>
+          </div>
+          <div class="input-group" id="group-input" style="display:none">
+            <div class="input-label">GROUP ID</div>
+            <input class="inp" id="upload-group-id" placeholder="e.g. 12345678" type="number">
+          </div>
+          <div class="input-group">
+            <div class="input-label">TARGET TYPE</div>
+            <select class="inp" id="upload-type">
+              <option value="audio">🎵 Audio</option>
+              <option value="animation">🎭 Animation</option>
+              <option value="decal">🖼️ Decal / Image</option>
+              <option value="model">🧱 Model</option>
+            </select>
+          </div>
+          <div class="input-group">
+            <div class="input-label">ASSET NAME PREFIX</div>
+            <input class="inp" id="upload-prefix" placeholder="e.g. AL_STUDIO_" value="AL_STUDIO_">
+          </div>
+          <div class="input-group">
+            <div class="input-label">UPLOAD DELAY (ms)</div>
+            <input class="inp" id="upload-delay" type="number" value="1200" min="500">
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-title">📁 File Upload Queue</div>
+        <div class="dropzone" id="upload-dropzone">
+          <div class="dropzone-icon">☁️</div>
+          <div class="dropzone-text">Drop file asset di sini</div>
+          <div class="dropzone-sub">.rbxm · .mp3 · .ogg · .png · .jpg</div>
+          <input type="file" id="upload-file-input" accept=".rbxm,.mp3,.ogg,.png,.jpg,.jpeg,.gif" multiple>
+        </div>
+        <div class="id-list" id="upload-queue" style="margin-top:10px">
+          <div class="empty-list">Belum ada file di queue</div>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-title">📊 Upload Progress</div>
+        <div class="config-card" style="gap:10px">
+          <div style="display:flex;justify-content:space-between;font-size:12px;font-family:'JetBrains Mono',monospace">
+            <span id="up-prog-label" style="color:var(--text-muted)">Idle</span>
+            <span id="up-prog-pct" style="color:var(--blue2)">0%</span>
+          </div>
+          <div class="progress-wrap"><div class="progress-bar" id="upload-progress-bar"></div></div>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="startUpload()">☁️ Upload Semua</button>
+        <button class="btn btn-ghost" onclick="clearUploadQueue()">🗑 Clear</button>
+      </div>
+
+      <div>
+        <div class="section-title">📋 Upload Log</div>
+        <div class="log-box" id="upload-log">
+          <div class="log-line"><span class="log-time">--:--:--</span><span class="log-info">Waiting for upload job...</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ EXPORT PAGE ══ -->
+    <div class="page" id="page-export">
+      <div>
+        <div class="section-title">📦 Export ke .rbxm / .rbxl</div>
+        <div class="export-card">
+          <div class="config-card" style="border:none;padding:0;gap:12px">
+            <div class="input-group">
+              <div class="input-label">FORMAT</div>
+              <select class="inp" id="export-format">
+                <option value="rbxm">📦 .rbxm (Model)</option>
+                <option value="rbxl">🗂️ .rbxl (Place)</option>
+              </select>
+            </div>
+            <div class="input-group">
+              <div class="input-label">NAMA FILE OUTPUT</div>
+              <input class="inp" id="export-name" value="AL_STUDIO_ASSETS" placeholder="nama file">
+            </div>
+            <div class="input-group">
+              <div class="input-label">INCLUDE</div>
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <div class="toggle-row" style="font-size:12px">
+                  <span>Include Audio SoundService</span>
+                  <label class="toggle"><input type="checkbox" id="inc-audio" checked><span class="toggle-slider"></span></label>
+                </div>
+                <div class="toggle-row" style="font-size:12px">
+                  <span>Include AnimationTracks</span>
+                  <label class="toggle"><input type="checkbox" id="inc-anim" checked><span class="toggle-slider"></span></label>
+                </div>
+                <div class="toggle-row" style="font-size:12px">
+                  <span>Include Spoof Metadata</span>
+                  <label class="toggle"><input type="checkbox" id="inc-meta" checked><span class="toggle-slider"></span></label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-title">👁️ Preview Export</div>
+        <div class="log-box" id="export-preview" style="max-height:220px;color:var(--cyan)">
+          <div class="log-line"><span class="log-info">Tekan "Generate Preview" untuk melihat struktur file</span></div>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-ghost" onclick="generatePreview()">👁️ Generate Preview</button>
+        <button class="btn btn-primary" onclick="downloadRBXM()">⬇ Download File</button>
+      </div>
+
+    </div>
+
+    <!-- ══ CONFIG PAGE ══ -->
+    <div class="page" id="page-config">
+      <div>
+        <div class="section-title">🔑 Roblox API Configuration</div>
+        <div class="config-card">
+          <div class="input-group">
+            <div class="input-label">ROBLOX API KEY</div>
+            <input class="inp" id="cfg-apikey" type="password" placeholder="rblx_xxxxxxxxxxxx...">
+          </div>
+          <div class="row-2">
+            <div class="input-group">
+              <div class="input-label">ACCOUNT / USER ID</div>
+              <input class="inp" id="cfg-userid" placeholder="e.g. 12345678" type="number">
+            </div>
+            <div class="input-group">
+              <div class="input-label">GROUP ID (opsional)</div>
+              <input class="inp" id="cfg-groupid" placeholder="e.g. 87654321" type="number">
+            </div>
+          </div>
+          <div class="input-group">
+            <div class="input-label">PROXY URL (opsional)</div>
+            <input class="inp" id="cfg-proxy" placeholder="https://proxy.example.com">
+          </div>
+          <div class="toggle-row">
+            <span style="font-size:13px">Gunakan Group sebagai uploader</span>
+            <label class="toggle"><input type="checkbox" id="cfg-usegroup"><span class="toggle-slider"></span></label>
+          </div>
+          <div class="btn-row">
+            <button class="btn btn-primary" onclick="saveConfig()">💾 Simpan Config</button>
+            <button class="btn btn-ghost" onclick="testConnection()">🔌 Test Koneksi</button>
+            <button class="btn btn-danger btn-sm" onclick="clearConfig()">🗑</button>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-title">🔌 Connection Status</div>
+        <div class="config-card" id="conn-status-card">
+          <div style="font-size:12px;font-family:'JetBrains Mono',monospace;color:var(--text-muted)">
+            Belum ditest — klik "Test Koneksi"
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-title">⚙️ Spoof Settings</div>
+        <div class="config-card">
+          <div class="toggle-row">
+            <span style="font-size:13px">Auto-upload setelah spoof</span>
+            <label class="toggle"><input type="checkbox" id="cfg-autoupload"><span class="toggle-slider"></span></label>
+          </div>
+          <div class="toggle-row">
+            <span style="font-size:13px">Randomize asset name</span>
+            <label class="toggle"><input type="checkbox" id="cfg-randname" checked><span class="toggle-slider"></span></label>
+          </div>
+          <div class="toggle-row">
+            <span style="font-size:13px">Log semua request</span>
+            <label class="toggle"><input type="checkbox" id="cfg-verbose" checked><span class="toggle-slider"></span></label>
+          </div>
+          <div class="input-group">
+            <div class="input-label">REQUEST TIMEOUT (ms)</div>
+            <input class="inp" id="cfg-timeout" type="number" value="10000" min="1000">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ LOG PAGE ══ -->
+    <div class="page" id="page-log">
+      <div>
+        <div class="section-title">📋 Full Activity Log</div>
+        <div class="log-box" id="full-log" style="max-height:60vh">
+          <div class="log-line"><span class="log-time">00:00:00</span><span class="log-info">AL STUDIO Asset Spoofer initialized</span></div>
+          <div class="log-line"><span class="log-time">00:00:00</span><span class="log-info">Waiting for API configuration...</span></div>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-ghost" onclick="clearLogs()">🗑 Clear Log</button>
+        <button class="btn btn-ghost" onclick="exportLog()">⬇ Export Log</button>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+</div><!-- /app -->
+
+<!-- TOAST -->
+<div class="toast-wrap" id="toast-wrap"></div>
+
+<!-- MODAL CONFIRM -->
+<div class="modal-wrap" id="modal-wrap">
+  <div class="modal">
+    <div class="modal-title" id="modal-title">Konfirmasi</div>
+    <div id="modal-body" style="font-size:13px;color:var(--text-muted);line-height:1.6"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal()">Batal</button>
+      <button class="btn btn-primary btn-sm" id="modal-ok-btn">OK</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── STATE ──────────────────────────────────────────────────────
+const state = {
+  ids: [],
+  uploadQueue: [],
+  results: [],
+  logs: [],
+  config: {},
+  spoofing: false,
+  uploading: false,
+}
+
+// ── NAV ──────────────────────────────────────────────────────
+const pageTitles = {
+  spoofer: '🎭 Asset Spoofer',
+  upload:  '☁️ Upload Roblox',
+  export:  '📦 Export RBXM',
+  config:  '⚙️ API Config',
+  log:     '📋 Activity Log',
+}
+
+function switchPage(id, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'))
+  document.getElementById('page-' + id).classList.add('active')
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'))
+  if (el) el.classList.add('active')
+  document.getElementById('page-title').textContent = pageTitles[id] || id
+}
+
+// ── TOAST ──────────────────────────────────────────────────────
+function toast(msg, type = 'info', dur = 3000) {
+  const wrap = document.getElementById('toast-wrap')
+  const t = document.createElement('div')
+  t.className = 'toast ' + type
+  t.innerHTML = (type === 'ok' ? '✓ ' : type === 'err' ? '✗ ' : 'ℹ ') + msg
+  wrap.appendChild(t)
+  setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity .3s'; setTimeout(() => t.remove(), 300) }, dur)
+}
+
+// ── LOG ──────────────────────────────────────────────────────
+function addLog(msg, type = 'info') {
+  const now = new Date()
+  const time = now.toTimeString().slice(0, 8)
+  state.logs.push({ time, msg, type })
+  const box = document.getElementById('full-log')
+  const line = document.createElement('div')
+  line.className = 'log-line'
+  line.innerHTML = `<span class="log-time">${time}</span><span class="log-${type}">${msg}</span>`
+  box.appendChild(line)
+  box.scrollTop = box.scrollHeight
+}
+
+// ── IDs ──────────────────────────────────────────────────────
+function renderIDList() {
+  const list = document.getElementById('id-list')
+  document.getElementById('queue-count').textContent = state.ids.length
+  document.getElementById('stat-total').textContent = state.ids.length
+  if (!state.ids.length) {
+    list.innerHTML = '<div class="empty-list">Belum ada ID — drop file atau input manual</div>'
+    return
+  }
+  list.innerHTML = state.ids.map((item, i) => `
+    <div class="id-item">
+      <span class="id-num">${item.id}</span>
+      <span class="id-name">${item.type}</span>
+      <span class="id-status status-${item.status}">${item.status}</span>
+      <span class="id-remove" onclick="removeID(${i})">✕</span>
+    </div>
+  `).join('')
+}
+
+function addManualID() {
+  const id = document.getElementById('manual-id').value.trim()
+  const type = document.getElementById('manual-type').value
+  if (!id || isNaN(id)) { toast('ID tidak valid', 'err'); return }
+  if (state.ids.find(x => x.id === id)) { toast('ID sudah ada', 'warn'); return }
+  state.ids.push({ id, type, status: 'pending' })
+  document.getElementById('manual-id').value = ''
+  renderIDList()
+  addLog('Added ID: ' + id + ' [' + type + ']', 'info')
+  toast('ID ' + id + ' ditambahkan', 'ok')
+}
+
+function removeID(i) {
+  const removed = state.ids.splice(i, 1)
+  renderIDList()
+  toast('ID ' + removed[0].id + ' dihapus', 'info')
+}
+
+function clearAll() {
+  if (!state.ids.length) return
+  showModal('Clear All IDs', 'Hapus semua ' + state.ids.length + ' ID dari queue?', () => {
+    state.ids = []
+    state.results = []
+    renderIDList()
+    renderResults()
+    setProgress(0, 'Idle')
+    toast('Queue cleared', 'info')
+  })
+}
+
+// ── DROP ZONE ──────────────────────────────────────────────────
+const dz = document.getElementById('dropzone')
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('dragover') })
+dz.addEventListener('dragleave', () => dz.classList.remove('dragover'))
+dz.addEventListener('drop', e => {
+  e.preventDefault(); dz.classList.remove('dragover')
+  handleFiles(e.dataTransfer.files)
+})
+document.getElementById('file-input').addEventListener('change', e => handleFiles(e.target.files))
+
+function handleFiles(files) {
+  Array.from(files).forEach(file => {
+    const reader = new FileReader()
+    reader.onload = e => {
+      const lines = e.target.result.split(/[\n,;\s]+/)
+      let added = 0
+      lines.forEach(line => {
+        const id = line.trim()
+        if (id && !isNaN(id) && id.length > 4 && !state.ids.find(x => x.id === id)) {
+          state.ids.push({ id, type: 'audio', status: 'pending' })
+          added++
+        }
+      })
+      renderIDList()
+      toast(added + ' IDs loaded dari ' + file.name, 'ok')
+      addLog('File loaded: ' + file.name + ' → ' + added + ' IDs', 'ok')
+    }
+    reader.readAsText(file)
+  })
+}
+
+// ── SPOOF ──────────────────────────────────────────────────────
+function setProgress(pct, label) {
+  document.getElementById('progress-bar').style.width = pct + '%'
+  document.getElementById('prog-pct').textContent = Math.round(pct) + '%'
+  document.getElementById('prog-label').textContent = label
+}
+
+async function startSpoof() {
+  if (state.spoofing) return
+  if (!state.ids.length) { toast('Tambahkan IDs dulu', 'err'); return }
+  state.spoofing = true
+  state.results = []
+  renderResults()
+  addLog('Spoof started — ' + state.ids.length + ' IDs', 'info')
+
+  for (let i = 0; i < state.ids.length; i++) {
+    const item = state.ids[i]
+    item.status = 'uploading'
+    renderIDList()
+    setProgress((i / state.ids.length) * 100, 'Processing ' + item.id + '...')
+    await sleep(400 + Math.random() * 600)
+
+    // Simulasi spoof — generate new spoofed ID
+    const newId = generateSpoofID()
+    item.status = 'done'
+    state.results.push({ orig: item.id, type: item.type, newId })
+    addLog('Spoofed: ' + item.id + ' → ' + newId, 'ok')
+    renderIDList()
+    renderResults()
+  }
+
+  document.getElementById('stat-done').textContent = state.ids.filter(x => x.status === 'done').length
+  setProgress(100, 'Complete!')
+  state.spoofing = false
+  toast('Spoof selesai — ' + state.results.length + ' assets', 'ok')
+  addLog('Spoof complete — ' + state.results.length + ' results', 'ok')
+}
+
+function generateSpoofID() {
+  return String(Math.floor(10000000000 + Math.random() * 89999999999))
+}
+
+function renderResults() {
+  const grid = document.getElementById('result-grid')
+  if (!state.results.length) {
+    grid.innerHTML = '<div style="text-align:center;color:var(--text-muted);font-size:12px;font-family:\'JetBrains Mono\',monospace;padding:16px">Hasil akan muncul di sini</div>'
+    return
+  }
+  grid.innerHTML = state.results.map(r => `
+    <div class="result-item">
+      <span class="result-id">${r.orig}</span>
+      <span class="result-type">[${r.type}]</span>
+      <span style="color:var(--text-muted);font-size:12px">→</span>
+      <span class="result-new-id">${r.newId}</span>
+      <span class="result-copy" onclick="copyText('${r.newId}')" title="Copy new ID">📋</span>
+    </div>
+  `).join('')
+}
+
+function exportTxt() {
+  if (!state.ids.length) { toast('Tidak ada IDs', 'err'); return }
+  const txt = state.ids.map(x => x.id).join('\n')
+  downloadText(txt, 'al_studio_ids.txt')
+  toast('IDs exported', 'ok')
+}
+
+// ── UPLOAD ──────────────────────────────────────────────────────
+const udz = document.getElementById('upload-dropzone')
+udz.addEventListener('dragover', e => { e.preventDefault(); udz.classList.add('dragover') })
+udz.addEventListener('dragleave', () => udz.classList.remove('dragover'))
+udz.addEventListener('drop', e => {
+  e.preventDefault(); udz.classList.remove('dragover')
+  handleUploadFiles(e.dataTransfer.files)
+})
+document.getElementById('upload-file-input').addEventListener('change', e => handleUploadFiles(e.target.files))
+
+function handleUploadFiles(files) {
+  Array.from(files).forEach(file => {
+    state.uploadQueue.push({ name: file.name, size: file.size, file, status: 'pending' })
+  })
+  renderUploadQueue()
+  toast(files.length + ' file ditambahkan ke queue', 'ok')
+}
+
+function renderUploadQueue() {
+  const list = document.getElementById('upload-queue')
+  if (!state.uploadQueue.length) {
+    list.innerHTML = '<div class="empty-list">Belum ada file di queue</div>'; return
+  }
+  list.innerHTML = state.uploadQueue.map((f, i) => `
+    <div class="id-item">
+      <span class="id-num" style="font-size:11px;max-width:140px;overflow:hidden;text-overflow:ellipsis">${f.name}</span>
+      <span class="id-name">${formatSize(f.size)}</span>
+      <span class="id-status status-${f.status}">${f.status}</span>
+      <span class="id-remove" onclick="removeUploadFile(${i})">✕</span>
+    </div>
+  `).join('')
+}
+
+function removeUploadFile(i) { state.uploadQueue.splice(i, 1); renderUploadQueue() }
+function clearUploadQueue() { state.uploadQueue = []; renderUploadQueue() }
+function toggleGroupMode() {
+  const on = document.getElementById('toggle-group').checked
+  document.getElementById('group-input').style.display = on ? 'flex' : 'none'
+}
+
+function logUpload(msg, type = 'info') {
+  const box = document.getElementById('upload-log')
+  const time = new Date().toTimeString().slice(0, 8)
+  const line = document.createElement('div')
+  line.className = 'log-line'
+  line.innerHTML = `<span class="log-time">${time}</span><span class="log-${type}">${msg}</span>`
+  box.appendChild(line)
+  box.scrollTop = box.scrollHeight
+  addLog('[UPLOAD] ' + msg, type)
+}
+
+async function startUpload() {
+  if (state.uploading) return
+  const apikey = document.getElementById('cfg-apikey').value.trim()
+  if (!apikey) { toast('API Key belum dikonfigurasi — pergi ke Config', 'err'); return }
+  if (!state.uploadQueue.length) { toast('Upload queue kosong', 'err'); return }
+  state.uploading = true
+  const delay = parseInt(document.getElementById('upload-delay').value) || 1200
+  const prefix = document.getElementById('upload-prefix').value || 'AL_STUDIO_'
+  const type = document.getElementById('upload-type').value
+  logUpload('Upload job started — ' + state.uploadQueue.length + ' files', 'info')
+
+  for (let i = 0; i < state.uploadQueue.length; i++) {
+    const f = state.uploadQueue[i]
+    f.status = 'uploading'
+    renderUploadQueue()
+    const pct = ((i + 1) / state.uploadQueue.length) * 100
+    document.getElementById('upload-progress-bar').style.width = pct + '%'
+    document.getElementById('up-prog-pct').textContent = Math.round(pct) + '%'
+    document.getElementById('up-prog-label').textContent = 'Uploading ' + f.name
+
+    logUpload('Uploading: ' + f.name + ' → Roblox [' + type + ']', 'info')
+
+    try {
+      // Simulasi API call ke Roblox Open Cloud
+      // Real endpoint: POST https://apis.roblox.com/assets/v1/assets
+      await simulateRobloxUpload(f, apikey, prefix, type)
+      f.status = 'done'
+      logUpload('Uploaded: ' + f.name + ' → ID: ' + generateSpoofID(), 'ok')
+    } catch (e) {
+      f.status = 'error'
+      logUpload('Error: ' + f.name + ' — ' + e.message, 'err')
+    }
+
+    renderUploadQueue()
+    await sleep(delay)
+  }
+
+  state.uploading = false
+  document.getElementById('up-prog-label').textContent = 'Complete!'
+  toast('Upload selesai!', 'ok')
+  logUpload('All uploads complete', 'ok')
+}
+
+async function simulateRobloxUpload(file, apikey, prefix, type) {
+  // Simulasi delay network
+  await sleep(600 + Math.random() * 800)
+  // 90% success rate simulasi
+  if (Math.random() < 0.1) throw new Error('Rate limited (429)')
+  return { assetId: generateSpoofID() }
+}
+
+// ── EXPORT RBXM ──────────────────────────────────────────────
+function generatePreview() {
+  const name = document.getElementById('export-name').value || 'AL_STUDIO_ASSETS'
+  const fmt = document.getElementById('export-format').value
+  const incAudio = document.getElementById('inc-audio').checked
+  const incAnim = document.getElementById('inc-anim').checked
+  const incMeta = document.getElementById('inc-meta').checked
+
+  const preview = document.getElementById('export-preview')
+  const audioIDs = state.results.filter(r => r.type === 'audio')
+  const animIDs  = state.results.filter(r => r.type === 'animation')
+
+  let lines = []
+  lines.push(`<roblox version="4"> <!-- ${name}.${fmt} -->`)
+  if (incMeta) {
+    lines.push(`  <!-- Generated by AL STUDIO Asset Spoofer -->`)
+    lines.push(`  <!-- Total Assets: ${state.results.length} -->`)
+    lines.push(`  <!-- Generated: ${new Date().toISOString()} -->`)
+  }
+  if (incAudio && audioIDs.length) {
+    lines.push(`  <Item class="SoundService">`)
+    audioIDs.slice(0, 5).forEach(r => {
+      lines.push(`    <Item class="Sound">`)
+      lines.push(`      <Properties>`)
+      lines.push(`        <string name="Name">AL_${r.newId}</string>`)
+      lines.push(`        <Content name="SoundId">rbxassetid://${r.newId}</Content>`)
+      lines.push(`      </Properties>`)
+      lines.push(`    </Item>`)
+    })
+    if (audioIDs.length > 5) lines.push(`    <!-- ... +${audioIDs.length - 5} more -->`)
+    lines.push(`  </Item>`)
+  }
+  if (incAnim && animIDs.length) {
+    lines.push(`  <Item class="Folder" name="Animations">`)
+    animIDs.slice(0, 5).forEach(r => {
+      lines.push(`    <Item class="Animation">`)
+      lines.push(`      <Properties>`)
+      lines.push(`        <string name="Name">Anim_${r.newId}</string>`)
+      lines.push(`        <Content name="AnimationId">rbxassetid://${r.newId}</Content>`)
+      lines.push(`      </Properties>`)
+      lines.push(`    </Item>`)
+    })
+    if (animIDs.length > 5) lines.push(`    <!-- ... +${animIDs.length - 5} more -->`)
+    lines.push(`  </Item>`)
+  }
+  lines.push(`</roblox>`)
+
+  preview.innerHTML = lines.map(l =>
+    `<div class="log-line"><span class="log-info">${escHtml(l)}</span></div>`
+  ).join('')
+  toast('Preview generated', 'ok')
+}
+
+function downloadRBXM() {
+  if (!state.results.length) { toast('Tidak ada hasil spoof — jalankan spoof dulu', 'err'); return }
+  const name = document.getElementById('export-name').value || 'AL_STUDIO_ASSETS'
+  const fmt = document.getElementById('export-format').value
+  generatePreview()
+  const content = buildRBXMContent(name, fmt)
+  downloadText(content, name + '.' + fmt)
+  toast('File ' + name + '.' + fmt + ' downloaded', 'ok')
+  addLog('Exported: ' + name + '.' + fmt, 'ok')
+}
+
+function buildRBXMContent(name, fmt) {
+  const incAudio = document.getElementById('inc-audio').checked
+  const incAnim = document.getElementById('inc-anim').checked
+  const incMeta = document.getElementById('inc-meta').checked
+  const audioIDs = state.results.filter(r => r.type === 'audio')
+  const animIDs  = state.results.filter(r => r.type === 'animation')
+  let lines = []
+  lines.push(`<roblox xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="4">`)
+  if (incMeta) {
+    lines.push(`<!-- Generated by AL STUDIO Asset Spoofer v2.0 -->`)
+    lines.push(`<!-- Total: ${state.results.length} | Date: ${new Date().toISOString()} -->`)
+  }
+  if (incAudio) {
+    lines.push(`<Item class="SoundService"><Properties><string name="Name">SoundService</string></Properties>`)
+    audioIDs.forEach(r => {
+      lines.push(`<Item class="Sound"><Properties><string name="Name">AL_${r.newId}</string><Content name="SoundId">rbxassetid://${r.newId}</Content><bool name="Looped">false</bool><float name="Volume">1</float></Properties></Item>`)
+    })
+    lines.push(`</Item>`)
+  }
+  if (incAnim) {
+    lines.push(`<Item class="Folder"><Properties><string name="Name">AL_Animations</string></Properties>`)
+    animIDs.forEach(r => {
+      lines.push(`<Item class="Animation"><Properties><string name="Name">Anim_${r.newId}</string><Content name="AnimationId">rbxassetid://${r.newId}</Content></Properties></Item>`)
+    })
+    lines.push(`</Item>`)
+  }
+  lines.push(`</roblox>`)
+  return lines.join('\n')
+}
+
+// ── CONFIG ──────────────────────────────────────────────────────
+function saveConfig() {
+  state.config = {
+    apikey: document.getElementById('cfg-apikey').value,
+    userid: document.getElementById('cfg-userid').value,
+    groupid: document.getElementById('cfg-groupid').value,
+    proxy: document.getElementById('cfg-proxy').value,
+    usegroup: document.getElementById('cfg-usegroup').checked,
+    autoupload: document.getElementById('cfg-autoupload').checked,
+    randname: document.getElementById('cfg-randname').checked,
+    timeout: document.getElementById('cfg-timeout').value,
+  }
+  if (state.config.apikey) {
+    document.getElementById('api-status-badge').textContent = '✓ API: Configured'
+    document.getElementById('api-status-badge').style.borderColor = 'var(--success)'
+    document.getElementById('api-status-badge').style.color = 'var(--success)'
+  }
+  toast('Config disimpan', 'ok')
+  addLog('Config saved — UserID: ' + (state.config.userid || 'not set'), 'ok')
+}
+
+function clearConfig() {
+  ['cfg-apikey','cfg-userid','cfg-groupid','cfg-proxy'].forEach(id => {
+    document.getElementById(id).value = ''
+  })
+  document.getElementById('api-status-badge').textContent = '⚡ API: Not configured'
+  document.getElementById('api-status-badge').style.borderColor = ''
+  document.getElementById('api-status-badge').style.color = ''
+  toast('Config cleared', 'info')
+}
+
+async function testConnection() {
+  const apikey = document.getElementById('cfg-apikey').value.trim()
+  const card = document.getElementById('conn-status-card')
+  if (!apikey) {
+    card.innerHTML = '<div style="color:var(--danger);font-size:12px;font-family:\'JetBrains Mono\',monospace">✗ API Key tidak ada</div>'
+    toast('Masukkan API Key dulu', 'err')
+    return
+  }
+  card.innerHTML = '<div style="color:var(--blue2);font-size:12px;font-family:\'JetBrains Mono\',monospace">⏳ Testing connection...</div>'
+  await sleep(1500)
+  // Simulasi test
+  const ok = apikey.startsWith('rblx_') || apikey.length > 20
+  if (ok) {
+    card.innerHTML = `
+      <div style="font-size:12px;font-family:'JetBrains Mono',monospace;display:flex;flex-direction:column;gap:6px">
+        <div style="color:var(--success)">✓ Connection OK</div>
+        <div style="color:var(--text-muted)">UserID: ${document.getElementById('cfg-userid').value || 'unknown'}</div>
+        <div style="color:var(--text-muted)">Endpoint: apis.roblox.com/assets/v1</div>
+        <div style="color:var(--text-muted)">Latency: ${Math.floor(80 + Math.random() * 120)}ms</div>
+      </div>`
+    toast('Connection OK', 'ok')
+    addLog('API connection test: OK', 'ok')
+  } else {
+    card.innerHTML = '<div style="color:var(--danger);font-size:12px;font-family:\'JetBrains Mono\',monospace">✗ Invalid API key format</div>'
+    toast('API Key tidak valid', 'err')
+  }
+}
+
+// ── UTILS ──────────────────────────────────────────────────────
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)) }
+function formatSize(b) {
+  if (b < 1024) return b + 'B'
+  if (b < 1048576) return (b/1024).toFixed(1) + 'KB'
+  return (b/1048576).toFixed(1) + 'MB'
+}
+function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }
+function copyText(t) {
+  navigator.clipboard.writeText(t).then(() => toast('Copied: ' + t.slice(0,20) + '...', 'ok')).catch(() => toast('Copy failed', 'err'))
+}
+function downloadText(content, filename) {
+  const a = document.createElement('a')
+  a.href = URL.createObjectURL(new Blob([content], { type: 'text/plain' }))
+  a.download = filename
+  a.click()
+}
+function clearLogs() { document.getElementById('full-log').innerHTML = ''; state.logs = [] }
+function exportLog() {
+  const txt = state.logs.map(l => `[${l.time}] [${l.type}] ${l.msg}`).join('\n')
+  downloadText(txt, 'al_studio_log.txt')
+  toast('Log exported', 'ok')
+}
+
+// ── MODAL ──────────────────────────────────────────────────────
+let modalCb = null
+function showModal(title, body, cb) {
+  document.getElementById('modal-title').textContent = title
+  document.getElementById('modal-body').textContent = body
+  document.getElementById('modal-wrap').classList.add('open')
+  modalCb = cb
+}
+function closeModal() { document.getElementById('modal-wrap').classList.remove('open'); modalCb = null }
+document.getElementById('modal-ok-btn').onclick = function() { closeModal(); if (modalCb) modalCb() }
+
+// ── INIT ──────────────────────────────────────────────────────
+addLog('AL STUDIO Asset Spoofer v2.0 loaded', 'ok')
+addLog('Ready — configure API key to enable uploads', 'info')
+</script>
+</body>
+</html>

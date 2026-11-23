@@ -1,0 +1,37 @@
+{
+  "name": "al-studio-asset-spoofer",
+  "version": "2.0.0",
+  "description": "AL STUDIO — Roblox Asset Spoofer & Uploader Tool",
+  "author": "AL STUDIO <al-studio70>",
+  "license": "MIT",
+  "homepage": "https://github.com/al-studio70/al-studio-spoofer",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/al-studio70/al-studio-spoofer.git"
+  },
+  "main": "src/index.html",
+  "scripts": {
+    "start": "npx serve src",
+    "dev": "npx live-server src",
+    "build": "node scripts/build.js",
+    "zip": "node scripts/zip.js",
+    "lint": "npx eslint src/**/*.js"
+  },
+  "keywords": [
+    "roblox",
+    "asset-spoofer",
+    "roblox-studio",
+    "animation",
+    "audio",
+    "rbxm",
+    "luau",
+    "al-studio"
+  ],
+  "devDependencies": {
+    "live-server": "^1.2.2",
+    "serve": "^14.2.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
