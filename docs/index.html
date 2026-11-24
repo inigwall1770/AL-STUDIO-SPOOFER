@@ -1,0 +1,2971 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AL STUDIO — Asset Spoofer</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg0: #07071a;
+  --bg1: #0d0d2b;
+  --bg2: #12123a;
+  --bg3: #181848;
+  --blue: #005eff;
+  --blue2: #3d8bff;
+  --blue3: #7ab8ff;
+  --cyan: #00e5ff;
+  --glow: 0 0 18px #005eff88, 0 0 40px #005eff33;
+  --glow-sm: 0 0 8px #005eff66;
+  --border: #1e1e55;
+  --border-bright: #2a2a7a;
+  --text: #d0d8ff;
+  --text-muted: #5a6090;
+  --radius: 10px;
+  --success: #00e676;
+  --warning: #ffab00;
+  --danger: #ff4444;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+@keyframes rgb-border {
+  0%   { border-color: #005eff; box-shadow: 0 0 12px #005eff66; }
+  25%  { border-color: #a000ff; box-shadow: 0 0 12px #a000ff66; }
+  50%  { border-color: #00e5ff; box-shadow: 0 0 12px #00e5ff66; }
+  75%  { border-color: #00ff88; box-shadow: 0 0 12px #00ff8866; }
+  100% { border-color: #005eff; box-shadow: 0 0 12px #005eff66; }
+}
+@keyframes rgb-text {
+  0%   { color: #005eff; }
+  25%  { color: #a855ff; }
+  50%  { color: #00e5ff; }
+  75%  { color: #00ff88; }
+  100% { color: #005eff; }
+}
+@keyframes pulse-glow {
+  0%, 100% { opacity: .6; }
+  50% { opacity: 1; }
+}
+@keyframes scanline {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--bg0);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* Scanline overlay */
+body::before {
+  content: '';
+  position: fixed;
+  left: 0; top: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(transparent, #005eff22, transparent);
+  animation: scanline 6s linear infinite;
+  pointer-events: none;
+  z-index: 999;
+}
+
+/* Grid bg */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(#005eff08 1px, transparent 1px),
+    linear-gradient(90deg, #005eff08 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── LAYOUT ── */
+.app { display: flex; min-height: 100vh; position: relative; z-index: 1; }
+
+/* ── SIDEBAR ── */
+.sidebar {
+  width: 220px;
+  min-width: 220px;
+  background: var(--bg1);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+
+.sidebar-logo {
+  padding: 20px 16px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.logo-title {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  animation: rgb-text 4s linear infinite;
+  letter-spacing: 1px;
+}
+
+.logo-sub {
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: 2px;
+  margin-top: 2px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.sidebar-nav { flex: 1; padding: 12px 8px; display: flex; flex-direction: column; gap: 2px; }
+
+.nav-label {
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: 1.5px;
+  padding: 8px 8px 4px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-muted);
+  transition: all .18s;
+  border: 1px solid transparent;
+  user-select: none;
+}
+.nav-item:hover { background: var(--bg2); color: var(--text); border-color: var(--border); }
+.nav-item.active {
+  background: #001a66;
+  color: var(--blue2);
+  border-color: var(--blue);
+  box-shadow: var(--glow-sm);
+}
+.nav-icon { font-size: 16px; min-width: 18px; text-align: center; }
+
+.sidebar-footer {
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* ── MAIN ── */
+.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+/* ── TOPBAR ── */
+.topbar {
+  background: var(--bg1);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.topbar-title {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.topbar-right { display: flex; align-items: center; gap: 10px; }
+
+.badge {
+  font-size: 11px;
+  font-family: 'JetBrains Mono', monospace;
+  padding: 3px 10px;
+  border-radius: 20px;
+  background: #001a44;
+  border: 1px solid var(--blue);
+  color: var(--blue2);
+  animation: rgb-border 4s linear infinite;
+}
+
+/* ── CONTENT ── */
+.content { flex: 1; padding: 20px 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; }
+
+/* ── PANELS ── */
+.page { display: none; flex-direction: column; gap: 20px; animation: fadeIn .3s ease; }
+.page.active { display: flex; }
+
+/* ── SECTION ── */
+.section-title {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--blue2);
+  letter-spacing: .5px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.section-title::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--border-bright), transparent);
+}
+
+/* ── API CONFIG ── */
+.config-card {
+  background: var(--bg1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.input-group { display: flex; flex-direction: column; gap: 5px; }
+.input-label { font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; letter-spacing: .5px; }
+.inp {
+  background: var(--bg0);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 9px 12px;
+  color: var(--text);
+  font-size: 13px;
+  font-family: 'JetBrains Mono', monospace;
+  outline: none;
+  transition: border-color .15s, box-shadow .15s;
+  width: 100%;
+}
+.inp:focus { border-color: var(--blue); box-shadow: var(--glow-sm); }
+.inp::placeholder { color: var(--text-muted); }
+
+.row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+/* ── DROP ZONE ── */
+.dropzone {
+  background: var(--bg1);
+  border: 2px dashed var(--border-bright);
+  border-radius: var(--radius);
+  padding: 32px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all .2s;
+  position: relative;
+  overflow: hidden;
+  animation: rgb-border 5s linear infinite;
+}
+.dropzone:hover, .dropzone.dragover {
+  background: #001133;
+  border-style: solid;
+}
+.dropzone-icon { font-size: 36px; margin-bottom: 10px; animation: float 3s ease-in-out infinite; }
+.dropzone-text { font-size: 14px; color: var(--text); font-weight: 500; }
+.dropzone-sub { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+.dropzone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+
+/* ── ID LIST ── */
+.id-input-row {
+  display: flex;
+  gap: 8px;
+}
+.id-input-row .inp { flex: 1; }
+
+.id-list {
+  background: var(--bg1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  max-height: 220px;
+  overflow-y: auto;
+}
+.id-list::-webkit-scrollbar { width: 4px; }
+.id-list::-webkit-scrollbar-track { background: var(--bg0); }
+.id-list::-webkit-scrollbar-thumb { background: var(--blue); border-radius: 4px; }
+
+.id-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+  font-family: 'JetBrains Mono', monospace;
+  transition: background .15s;
+}
+.id-item:last-child { border-bottom: none; }
+.id-item:hover { background: var(--bg2); }
+.id-item .id-num { color: var(--blue2); min-width: 90px; }
+.id-item .id-name { color: var(--text-muted); flex: 1; font-size: 11px; }
+.id-item .id-status { font-size: 10px; padding: 2px 7px; border-radius: 10px; }
+.status-pending { background: #33220080; color: var(--warning); border: 1px solid var(--warning); }
+.status-uploading { background: #001a4480; color: var(--blue2); border: 1px solid var(--blue); }
+.status-done { background: #00331880; color: var(--success); border: 1px solid var(--success); }
+.status-error { background: #33000080; color: var(--danger); border: 1px solid var(--danger); }
+.id-remove { cursor: pointer; color: var(--text-muted); font-size: 14px; padding: 0 4px; }
+.id-remove:hover { color: var(--danger); }
+
+.empty-list { padding: 24px; text-align: center; color: var(--text-muted); font-size: 12px; font-family: 'JetBrains Mono', monospace; }
+
+/* ── BUTTONS ── */
+.btn {
+  padding: 9px 18px;
+  border-radius: 8px;
+  border: 1px solid;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .15s;
+  font-family: 'Inter', sans-serif;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.btn-primary {
+  background: var(--blue);
+  border-color: var(--blue2);
+  color: #fff;
+  box-shadow: var(--glow-sm);
+}
+.btn-primary:hover { background: var(--blue2); transform: translateY(-1px); }
+.btn-primary:active { transform: scale(.98); }
+.btn-ghost {
+  background: transparent;
+  border-color: var(--border-bright);
+  color: var(--text-muted);
+}
+.btn-ghost:hover { border-color: var(--blue); color: var(--blue2); }
+.btn-danger {
+  background: transparent;
+  border-color: #55000088;
+  color: var(--danger);
+}
+.btn-danger:hover { background: #33000044; }
+.btn-success {
+  background: #003322;
+  border-color: var(--success);
+  color: var(--success);
+}
+.btn-success:hover { background: #00442e; }
+.btn-sm { padding: 6px 12px; font-size: 12px; }
+.btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* ── PROGRESS ── */
+.progress-wrap { background: var(--bg0); border-radius: 8px; overflow: hidden; height: 6px; }
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--blue), var(--cyan));
+  border-radius: 8px;
+  transition: width .4s ease;
+  width: 0%;
+  box-shadow: 0 0 8px #00e5ff88;
+}
+
+/* ── LOG ── */
+.log-box {
+  background: var(--bg0);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  max-height: 160px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.log-box::-webkit-scrollbar { width: 3px; }
+.log-box::-webkit-scrollbar-thumb { background: var(--border-bright); }
+.log-line { display: flex; gap: 8px; }
+.log-time { color: var(--text-muted); min-width: 60px; }
+.log-info { color: var(--blue2); }
+.log-ok { color: var(--success); }
+.log-err { color: var(--danger); }
+.log-warn { color: var(--warning); }
+
+/* ── STAT CARDS ── */
+.stats-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.stat-card {
+  background: var(--bg1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.stat-num {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--blue2);
+}
+.stat-label { font-size: 11px; color: var(--text-muted); }
+
+/* ── RBXM EXPORT ── */
+.export-card {
+  background: var(--bg1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+
+/* ── RESULT GRID ── */
+.result-grid { display: flex; flex-direction: column; gap: 6px; }
+.result-item {
+  background: var(--bg1);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  animation: fadeIn .2s ease;
+}
+.result-id { font-family: 'JetBrains Mono', monospace; color: var(--blue2); min-width: 100px; }
+.result-type { color: var(--text-muted); min-width: 70px; }
+.result-new-id { font-family: 'JetBrains Mono', monospace; color: var(--success); flex: 1; }
+.result-copy { cursor: pointer; color: var(--text-muted); font-size: 14px; }
+.result-copy:hover { color: var(--cyan); }
+
+/* ── MODAL ── */
+.modal-wrap {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,10,.85);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+.modal-wrap.open { display: flex; }
+.modal {
+  background: var(--bg1);
+  border: 1px solid var(--border-bright);
+  border-radius: 14px;
+  padding: 24px;
+  width: min(380px, 95vw);
+  animation: fadeIn .2s ease;
+  box-shadow: 0 0 40px #005eff22;
+}
+.modal-title {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--blue2);
+  margin-bottom: 16px;
+}
+.modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+
+/* ── TOAST ── */
+.toast-wrap { position: fixed; bottom: 20px; right: 20px; display: flex; flex-direction: column; gap: 8px; z-index: 200; }
+.toast {
+  background: var(--bg2);
+  border: 1px solid var(--border-bright);
+  border-radius: 10px;
+  padding: 10px 16px;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  animation: fadeIn .2s ease;
+  box-shadow: 0 4px 20px #00000066;
+  min-width: 200px;
+}
+.toast.ok { border-color: var(--success); color: var(--success); }
+.toast.err { border-color: var(--danger); color: var(--danger); }
+.toast.info { border-color: var(--blue); color: var(--blue2); }
+
+/* ── SELECT ── */
+select.inp { appearance: none; cursor: pointer; }
+
+/* ── TOGGLE ── */
+.toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 13px; }
+.toggle { position: relative; width: 40px; height: 22px; }
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggle-slider {
+  position: absolute;
+  inset: 0;
+  background: var(--bg0);
+  border: 1px solid var(--border-bright);
+  border-radius: 22px;
+  cursor: pointer;
+  transition: .2s;
+}
+.toggle-slider::after {
+  content: '';
+  position: absolute;
+  left: 3px; top: 3px;
+  width: 14px; height: 14px;
+  background: var(--text-muted);
+  border-radius: 50%;
+  transition: .2s;
+}
+.toggle input:checked + .toggle-slider { background: #001a44; border-color: var(--blue); }
+.toggle input:checked + .toggle-slider::after { background: var(--blue2); transform: translateX(18px); }
+
+@media (max-width: 600px) {
+  .sidebar { display: none; }
+  .row-2 { grid-template-columns: 1fr; }
+  .stats-row { grid-template-columns: 1fr 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-title">⬡ AL STUDIO</div>
+    <div class="logo-sub">ASSET SPOOFER v2.0</div>
+  </div>
+  <div class="sidebar-nav">
+    <div class="nav-label">MAIN</div>
+    <div class="nav-item active" onclick="switchPage('spoofer',this)">
+      <span class="nav-icon">🎭</span> Spoofer
+    </div>
+    <div class="nav-item" onclick="switchPage('fetch',this)">
+      <span class="nav-icon">🔍</span> Fetch by ID
+    </div>
+    <div class="nav-item" onclick="switchPage('upload',this)">
+      <span class="nav-icon">☁️</span> Upload Roblox
+    </div>
+    <div class="nav-item" onclick="switchPage('reupload',this)">
+      <span class="nav-icon">🔒</span> Re-upload Privat
+    </div>
+    <div class="nav-item" onclick="switchPage('export',this)">
+      <span class="nav-icon">📦</span> Export RBXM
+    </div>
+    <div class="nav-label">TOOLS</div>
+    <div class="nav-item" onclick="switchPage('config',this)">
+      <span class="nav-icon">⚙️</span> API Config
+    </div>
+    <div class="nav-item" onclick="switchPage('log',this)">
+      <span class="nav-icon">📋</span> Log
+    </div>
+  </div>
+  <div class="sidebar-footer">
+    build · code · create<br>
+    <span style="color:#005eff">●</span> AL STUDIO © 2026
+  </div>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title" id="page-title">🎭 Asset Spoofer</div>
+    <div class="topbar-right">
+      <span class="badge" id="api-status-badge">⚡ API: Not configured</span>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- ══ SPOOFER PAGE ══ -->
+    <div class="page active" id="page-spoofer">
+
+      <!-- STAT CARDS -->
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-num" id="stat-total">0</div>
+          <div class="stat-label">Total IDs</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num" id="stat-done" style="color:var(--success)">0</div>
+          <div class="stat-label">Uploaded</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num" id="stat-fail" style="color:var(--danger)">0</div>
+          <div class="stat-label">Failed</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num" id="stat-rbxm" style="color:var(--cyan)">0</div>
+          <div class="stat-label">RBXM Ready</div>
+        </div>
+      </div>
+
+      <!-- UPLOAD CONFIG (inline di spoofer) -->
+      <div>
+        <div class="section-title">⚙️ Upload Config</div>
+        <div class="config-card" style="gap:10px">
+          <div class="row-2">
+            <div class="input-group">
+              <div class="input-label">OPEN CLOUD API KEY</div>
+              <input class="inp" id="sp-apikey" type="password" placeholder="rblx_xxxxxxxxxxxx...">
+            </div>
+            <div class="input-group">
+              <div class="input-label">ASSET TYPE</div>
+              <select class="inp" id="sp-assettype">
+                <option value="audio">🎵 Audio</option>
+                <option value="animation">🎭 Animation</option>
+                <option value="image">🖼️ Image / Decal</option>
+                <option value="model">🧱 Model</option>
+              </select>
+            </div>
+          </div>
+          <div class="row-2">
+            <div class="input-group">
+              <div class="input-label">USER ID</div>
+              <input class="inp" id="sp-userid" placeholder="e.g. 12345678" type="number">
+            </div>
+            <div class="input-group">
+              <div class="input-label">GROUP ID (opsional)</div>
+              <input class="inp" id="sp-groupid" placeholder="e.g. 87654321" type="number">
+            </div>
+          </div>
+          <div class="row-2">
+            <div class="input-group">
+              <div class="input-label">ASSET NAME PREFIX</div>
+              <input class="inp" id="sp-prefix" value="AL_" placeholder="AL_">
+            </div>
+            <div class="input-group">
+              <div class="input-label">DELAY ANTAR UPLOAD (ms)</div>
+              <input class="inp" id="sp-delay" type="number" value="1200" min="500">
+            </div>
+          </div>
+          <div class="toggle-row">
+            <span style="font-size:13px">Upload ke Group</span>
+            <label class="toggle"><input type="checkbox" id="sp-usegroup"><span class="toggle-slider"></span></label>
+          </div>
+        </div>
+      </div>
+
+      <!-- DROP IDs -->
+      <div>
+        <div class="section-title">📂 Input Asset IDs</div>
+        <div class="dropzone" id="dropzone">
+          <div class="dropzone-icon">🎭</div>
+          <div class="dropzone-text">Drop file .txt / .csv berisi IDs</div>
+          <div class="dropzone-sub">atau input manual di bawah</div>
+          <input type="file" id="file-input" accept=".txt,.csv" multiple>
+        </div>
+      </div>
+
+      <!-- MANUAL INPUT -->
+      <div>
+        <div class="section-title">✍️ Input Manual</div>
+        <div class="id-input-row">
+          <input class="inp" id="manual-id" placeholder="Asset ID (e.g. 1234567890)" type="text">
+          <button class="btn btn-primary btn-sm" onclick="addManualID()">+ Add</button>
+        </div>
+      </div>
+
+      <!-- QUEUE -->
+      <div>
+        <div class="section-title">📋 ID Queue (<span id="queue-count">0</span>)</div>
+        <div class="id-list" id="id-list">
+          <div class="empty-list">Belum ada ID — drop file atau input manual</div>
+        </div>
+        <div class="btn-row" style="margin-top:10px">
+          <button class="btn btn-primary" onclick="startSpoof()">☁️ Upload ke Roblox</button>
+          <button class="btn btn-ghost" onclick="clearAll()">🗑 Clear</button>
+          <button class="btn btn-ghost" onclick="exportTxt()">⬇ Export IDs</button>
+        </div>
+      </div>
+
+      <!-- PROGRESS -->
+      <div>
+        <div class="section-title">📊 Progress</div>
+        <div class="config-card" style="gap:8px">
+          <div style="display:flex;justify-content:space-between;font-size:12px;font-family:'JetBrains Mono',monospace">
+            <span id="prog-label" style="color:var(--text-muted)">Idle</span>
+            <span id="prog-pct" style="color:var(--blue2)">0%</span>
+          </div>
+          <div class="progress-wrap"><div class="progress-bar" id="progress-bar"></div></div>
+        </div>
+      </div>
+
+      <!-- RESULTS -->
+      <div>
+        <div class="section-title">✅ Hasil Upload</div>
+        <div class="result-grid" id="result-grid">
+          <div class="empty-list" style="text-align:center;color:var(--text-muted);font-size:12px;font-family:'JetBrains Mono',monospace;padding:16px">
+            Hasil muncul di sini setelah upload selesai
+          </div>
+        </div>
+        <div class="btn-row" style="margin-top:10px">
+          <button class="btn btn-success" onclick="downloadAllSpoofRBXM()">📦 Download semua .rbxm</button>
+          <button class="btn btn-ghost" onclick="exportSpoofIDs()">📋 Export ID Baru</button>
+        </div>
+      </div>
+
+      <!-- SPOOF LOG -->
+      <div>
+        <div class="section-title">📋 Upload Log</div>
+        <div class="log-box" id="spoof-log">
+          <div class="log-line"><span class="log-time">--:--:--</span><span class="log-info">Waiting...</span></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ══ FETCH BY ID PAGE ══ -->
+    <div class="page" id="page-fetch">
+
+      <div style="background:#001a44;border:1px solid var(--blue);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--blue2);font-family:'JetBrains Mono',monospace;line-height:1.7">
+        🔍 <b>Cara kerja:</b> Masukkan asset ID → tool fetch file dari Roblox CDN →<br>
+        Auto re-upload ke akun lo → Dapet ID baru aktif + bisa download .rbxm
+      </div>
+
+      <!-- Input IDs -->
+      <div>
+        <div class="section-title">📋 Input Asset IDs</div>
+        <div class="config-card" style="gap:10px">
+          <div class="input-group">
+            <div class="input-label">PASTE IDs (satu per baris atau dipisah koma)</div>
+            <textarea class="inp" id="fetch-ids-input" rows="6" placeholder="1234567890&#10;9876543210&#10;1122334455&#10;..." style="resize:vertical;line-height:1.6"></textarea>
+          </div>
+          <div class="row-2">
+            <div class="input-group">
+              <div class="input-label">TIPE ASSET</div>
+              <select class="inp" id="fetch-type">
+                <option value="audio">🎵 Audio</option>
+                <option value="animation">🎭 Animation</option>
+                <option value="image">🖼️ Image / Decal</option>
+                <option value="model">🧱 Model</option>
+              </select>
+            </div>
+            <div class="input-group">
+              <div class="input-label">AKSI SETELAH FETCH</div>
+              <select class="inp" id="fetch-action">
+                <option value="download">⬇ Download .rbxm saja</option>
+                <option value="upload">☁️ Re-upload ke Roblox</option>
+                <option value="both">⬇ + ☁️ Download & Upload</option>
+              </select>
+            </div>
+          </div>
+          <div class="btn-row">
+            <button class="btn btn-primary" onclick="startFetch()">🔍 Fetch & Proses</button>
+            <button class="btn btn-ghost" onclick="clearFetchQueue()">🗑 Clear</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Progress -->
+      <div>
+        <div class="section-title">📊 Progress</div>
+        <div class="config-card" style="gap:8px">
+          <div style="display:flex;justify-content:space-between;font-size:12px;font-family:'JetBrains Mono',monospace">
+            <span id="fetch-prog-label" style="color:var(--text-muted)">Idle</span>
+            <span id="fetch-prog-pct" style="color:var(--blue2)">0%</span>
+          </div>
+          <div class="progress-wrap"><div class="progress-bar" id="fetch-progress-bar"></div></div>
+        </div>
+      </div>
+
+      <!-- Results -->
+      <div>
+        <div class="section-title">✅ Hasil Fetch (<span id="fetch-result-count">0</span>)</div>
+        <div class="id-list" id="fetch-result-list">
+          <div class="empty-list">Hasil fetch muncul di sini</div>
+        </div>
+      </div>
+
+      <!-- Log -->
+      <div>
+        <div class="section-title">📋 Fetch Log</div>
+        <div class="log-box" id="fetch-log">
+          <div class="log-line"><span class="log-time">--:--:--</span><span class="log-info">Waiting for fetch job...</span></div>
+        </div>
+      </div>
+
+      <!-- Export fetched -->
+      <div class="btn-row">
+        <button class="btn btn-success" onclick="downloadFetchedRBXM()">📦 Download semua .rbxm</button>
+        <button class="btn btn-ghost" onclick="exportFetchedIDs()">📋 Export ID hasil</button>
+      </div>
+
+    </div>
+
+    <!-- ══ UPLOAD PAGE ══ -->
+    <div class="page" id="page-upload">
+      <div>
+        <div class="section-title">☁️ Upload ke Roblox Dashboard</div>
+        <div style="background:#001a0a;border:1px solid var(--success);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--success);font-family:'JetBrains Mono',monospace;line-height:1.6;margin-bottom:4px">
+          ✓ <b>Direct Upload:</b> Gunakan <b>Cookie (.ROBLOSECURITY)</b> atau <b>Open Cloud API Key</b> — tanpa proxy.<br>
+          <span style="color:var(--text-muted)">Cookie mode: pakai endpoint publish.roblox.com (bypass CORS) | API Key mode: Open Cloud v1</span>
+        </div>
+        <div class="config-card">
+          <!-- AUTH METHOD -->
+          <div class="input-group">
+            <div class="input-label">AUTH METHOD</div>
+            <select class="inp" id="upload-auth-method" onchange="toggleUploadAuth()">
+              <option value="apikey">🔑 Open Cloud API Key</option>
+              <option value="cookie">🍪 Cookie (.ROBLOSECURITY) — no proxy</option>
+            </select>
+          </div>
+          <div class="input-group" id="upload-cookie-block" style="display:none">
+            <div class="input-label">ROBLOX COOKIE (.ROBLOSECURITY)</div>
+            <input class="inp" id="upload-cookie" type="password" placeholder="_|WARNING:-DO-NOT-SHARE-THIS..." autocomplete="off">
+          </div>
+          <div class="toggle-row">
+            <span>Upload ke Group</span>
+            <label class="toggle"><input type="checkbox" id="toggle-group" onchange="toggleGroupMode()"><span class="toggle-slider"></span></label>
+          </div>
+          <div class="input-group" id="group-input" style="display:none">
+            <div class="input-label">GROUP ID</div>
+            <input class="inp" id="upload-group-id" placeholder="e.g. 12345678" type="number">
+          </div>
+          <div class="input-group">
+            <div class="input-label">TARGET TYPE</div>
+            <select class="inp" id="upload-type">
+              <option value="audio">🎵 Audio</option>
+              <option value="animation">🎭 Animation</option>
+              <option value="decal">🖼️ Decal / Image</option>
+              <option value="model">🧱 Model</option>
+            </select>
+          </div>
+          <div class="input-group">
+            <div class="input-label">ASSET NAME PREFIX</div>
+            <input class="inp" id="upload-prefix" placeholder="e.g. AL_STUDIO_" value="AL_STUDIO_">
+          </div>
+          <div class="input-group">
+            <div class="input-label">UPLOAD DELAY (ms)</div>
+            <input class="inp" id="upload-delay" type="number" value="1200" min="500">
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-title">📁 File Upload Queue</div>
+        <div class="dropzone" id="upload-dropzone">
+          <div class="dropzone-icon">☁️</div>
+          <div class="dropzone-text">Drop file asset di sini</div>
+          <div class="dropzone-sub">.rbxm · .mp3 · .ogg · .png · .jpg</div>
+          <input type="file" id="upload-file-input" accept=".rbxm,.mp3,.ogg,.png,.jpg,.jpeg,.gif" multiple>
+        </div>
+        <div class="id-list" id="upload-queue" style="margin-top:10px">
+          <div class="empty-list">Belum ada file di queue</div>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-title">📊 Upload Progress</div>
+        <div class="config-card" style="gap:10px">
+          <div style="display:flex;justify-content:space-between;font-size:12px;font-family:'JetBrains Mono',monospace">
+            <span id="up-prog-label" style="color:var(--text-muted)">Idle</span>
+            <span id="up-prog-pct" style="color:var(--blue2)">0%</span>
+          </div>
+          <div class="progress-wrap"><div class="progress-bar" id="upload-progress-bar"></div></div>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="startUpload()">☁️ Upload Semua</button>
+        <button class="btn btn-ghost" onclick="clearUploadQueue()">🗑 Clear</button>
+      </div>
+
+      <div>
+        <div class="section-title">📋 Upload Log</div>
+        <div class="log-box" id="upload-log">
+          <div class="log-line"><span class="log-time">--:--:--</span><span class="log-info">Waiting for upload job...</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ REUPLOAD PRIVAT PAGE ══ -->
+    <div class="page" id="page-reupload">
+
+      <!-- INFO BANNER -->
+      <div style="background:#0a0030;border:1px solid var(--blue);border-radius:8px;padding:12px 16px;font-size:12px;font-family:'JetBrains Mono',monospace;line-height:1.75;color:var(--blue2)">
+        🔒 <b>Re-upload Asset Privat</b> — fetch asset yang lo punya tapi ga ada akses dashboard<br>
+        <span style="color:var(--text-muted)">
+        Method 1: <b>Cookie Auth</b> (.ROBLOSECURITY) → fetch via assetdelivery API langsung<br>
+        Method 2: <b>Open Cloud API Key</b> → reupload ke akun lo / group<br>
+        Method 3: <b>Proxy + Cookie</b> → bypass CORS untuk asset privat<br>
+        Support: Audio · Model · Animasi · Image · Decal
+        </span>
+      </div>
+
+      <!-- AUTH CONFIG -->
+      <div>
+        <div class="section-title">🔑 Auth Method</div>
+        <div class="config-card">
+          <div class="toggle-row">
+            <span style="font-size:13px">Gunakan Cookie (.ROBLOSECURITY)</span>
+            <label class="toggle"><input type="checkbox" id="ru-use-cookie" onchange="toggleRUAuth()" checked><span class="toggle-slider"></span></label>
+          </div>
+          <div id="ru-cookie-block">
+            <div class="input-group" style="margin-top:8px">
+              <div class="input-label">ROBLOX COOKIE (.ROBLOSECURITY)</div>
+              <input class="inp" id="ru-cookie" type="password" placeholder="_|WARNING:-DO-NOT-SHARE-THIS..." autocomplete="off">
+            </div>
+            <div style="font-size:11px;color:var(--warning);font-family:'JetBrains Mono',monospace;margin-top:5px">
+              ⚠ Cookie dipakai lokal di browser lo — tidak dikirim ke server mana pun kecuali Roblox API via proxy.
+            </div>
+          </div>
+          <div class="input-group">
+            <div class="input-label">OPEN CLOUD API KEY (untuk re-upload)</div>
+            <input class="inp" id="ru-apikey" type="password" placeholder="rblx_xxxxxxxxxxxx...">
+          </div>
+          <div class="row-2">
+            <div class="input-group">
+              <div class="input-label">USER ID (tujuan upload)</div>
+              <input class="inp" id="ru-userid" placeholder="e.g. 12345678" type="number">
+            </div>
+            <div class="input-group">
+              <div class="input-label">GROUP ID (opsional)</div>
+              <input class="inp" id="ru-groupid" placeholder="e.g. 87654321" type="number">
+            </div>
+          </div>
+          <div class="input-group">
+            <div class="input-label">PROXY URL (wajib untuk cookie auth — bypass CORS)</div>
+            <input class="inp" id="ru-proxy" placeholder="https://proxy.example.com">
+          </div>
+          <div class="toggle-row" style="margin-top:4px">
+            <span style="font-size:13px">Upload ke Group</span>
+            <label class="toggle"><input type="checkbox" id="ru-use-group"><span class="toggle-slider"></span></label>
+          </div>
+        </div>
+      </div>
+
+      <!-- ASSET IDS INPUT -->
+      <div>
+        <div class="section-title">📋 Input Asset IDs Privat</div>
+        <div class="config-card" style="gap:10px">
+          <div class="input-group">
+            <div class="input-label">PASTE IDs (satu per baris atau dipisah koma)</div>
+            <textarea class="inp" id="ru-ids-input" rows="5"
+              placeholder="1234567890&#10;9876543210&#10;1122334455"
+              style="resize:vertical;line-height:1.6"></textarea>
+          </div>
+          <div class="row-2">
+            <div class="input-group">
+              <div class="input-label">TIPE ASSET</div>
+              <select class="inp" id="ru-type">
+                <option value="audio">🎵 Audio</option>
+                <option value="animation">🎭 Animation</option>
+                <option value="image">🖼️ Image / Decal</option>
+                <option value="model">🧱 Model</option>
+              </select>
+            </div>
+            <div class="input-group">
+              <div class="input-label">AKSI</div>
+              <select class="inp" id="ru-action">
+                <option value="download">⬇ Download .rbxm saja</option>
+                <option value="reupload">☁️ Fetch + Re-upload</option>
+                <option value="both">⬇ + ☁️ Download & Re-upload</option>
+              </select>
+            </div>
+          </div>
+          <div class="input-group">
+            <div class="input-label">ASSET NAME PREFIX</div>
+            <input class="inp" id="ru-prefix" value="REUP_" placeholder="REUP_">
+          </div>
+          <div class="input-group">
+            <div class="input-label">DELAY ANTAR REQUEST (ms)</div>
+            <input class="inp" id="ru-delay" type="number" value="1500" min="500">
+          </div>
+        </div>
+      </div>
+
+      <!-- DROP FILE LANGSUNG -->
+      <div>
+        <div class="section-title">📁 Atau Drop File Langsung (bypass fetch)</div>
+        <div class="dropzone" id="ru-dropzone">
+          <div class="dropzone-icon">🔒</div>
+          <div class="dropzone-text">Drop file asset privat yang sudah lo punya</div>
+          <div class="dropzone-sub">.rbxm · .rbxanim · .mp3 · .ogg · .png · .jpg · .gif</div>
+          <input type="file" id="ru-file-input" accept=".rbxm,.rbxanim,.mp3,.ogg,.wav,.png,.jpg,.jpeg,.gif" multiple>
+        </div>
+        <div class="id-list" id="ru-file-queue" style="margin-top:8px">
+          <div class="empty-list">Belum ada file di queue</div>
+        </div>
+      </div>
+
+      <!-- ACTION BUTTONS -->
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="startReupload()">🔒 Fetch &amp; Re-upload</button>
+        <button class="btn btn-success" onclick="startReuploadFiles()">☁️ Upload File Queue</button>
+        <button class="btn btn-ghost" onclick="clearReuploadQueue()">🗑 Clear</button>
+        <button class="btn btn-ghost" onclick="testCookieAuth()">🔌 Test Cookie Auth</button>
+      </div>
+
+      <!-- PROGRESS -->
+      <div>
+        <div class="section-title">📊 Progress</div>
+        <div class="config-card" style="gap:8px">
+          <div style="display:flex;justify-content:space-between;font-size:12px;font-family:'JetBrains Mono',monospace">
+            <span id="ru-prog-label" style="color:var(--text-muted)">Idle</span>
+            <span id="ru-prog-pct" style="color:var(--blue2)">0%</span>
+          </div>
+          <div class="progress-wrap"><div class="progress-bar" id="ru-progress-bar"></div></div>
+        </div>
+      </div>
+
+      <!-- RESULT LIST -->
+      <div>
+        <div class="section-title">✅ Hasil Re-upload (<span id="ru-result-count">0</span>)</div>
+        <div class="id-list" id="ru-result-list" style="max-height:260px">
+          <div class="empty-list">Hasil muncul di sini setelah proses</div>
+        </div>
+        <div class="btn-row" style="margin-top:10px">
+          <button class="btn btn-ghost" onclick="downloadAllReuploadRBXM()">📦 Download semua .rbxm</button>
+          <button class="btn btn-ghost" onclick="exportReuploadIDs()">📋 Export ID Baru</button>
+        </div>
+      </div>
+
+      <!-- LOG -->
+      <div>
+        <div class="section-title">📋 Re-upload Log</div>
+        <div class="log-box" id="ru-log" style="max-height:180px">
+          <div class="log-line"><span class="log-time">--:--:--</span><span class="log-info">Waiting for job...</span></div>
+        </div>
+      </div>
+
+    </div><!-- /page-reupload -->
+
+    <!-- ══ EXPORT PAGE ══ -->
+    <div class="page" id="page-export">
+      <div>
+        <div class="section-title">📦 Export ke .rbxm / .rbxl</div>
+        <div class="export-card">
+          <div class="config-card" style="border:none;padding:0;gap:12px">
+            <div class="input-group">
+              <div class="input-label">FORMAT</div>
+              <select class="inp" id="export-format">
+                <option value="rbxm">📦 .rbxm (Model)</option>
+                <option value="rbxl">🗂️ .rbxl (Place)</option>
+              </select>
+            </div>
+            <div class="input-group">
+              <div class="input-label">NAMA FILE OUTPUT</div>
+              <input class="inp" id="export-name" value="AL_STUDIO_ASSETS" placeholder="nama file">
+            </div>
+            <div class="input-group">
+              <div class="input-label">INCLUDE</div>
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <div class="toggle-row" style="font-size:12px">
+                  <span>Include Audio SoundService</span>
+                  <label class="toggle"><input type="checkbox" id="inc-audio" checked><span class="toggle-slider"></span></label>
+                </div>
+                <div class="toggle-row" style="font-size:12px">
+                  <span>Include AnimationTracks</span>
+                  <label class="toggle"><input type="checkbox" id="inc-anim" checked><span class="toggle-slider"></span></label>
+                </div>
+                <div class="toggle-row" style="font-size:12px">
+                  <span>Include Spoof Metadata</span>
+                  <label class="toggle"><input type="checkbox" id="inc-meta" checked><span class="toggle-slider"></span></label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-title">👁️ Preview Export</div>
+        <div class="log-box" id="export-preview" style="max-height:220px;color:var(--cyan)">
+          <div class="log-line"><span class="log-info">Tekan "Generate Preview" untuk melihat struktur file</span></div>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-ghost" onclick="generatePreview()">👁️ Generate Preview</button>
+        <button class="btn btn-primary" onclick="downloadRBXM()">⬇ Download File</button>
+      </div>
+
+    </div>
+
+    <!-- ══ CONFIG PAGE ══ -->
+    <div class="page" id="page-config">
+      <div>
+        <div class="section-title">🔑 Roblox API Configuration</div>
+        <div class="config-card">
+          <div class="input-group">
+            <div class="input-label">ROBLOX API KEY</div>
+            <input class="inp" id="cfg-apikey" type="password" placeholder="rblx_xxxxxxxxxxxx...">
+          </div>
+          <div class="row-2">
+            <div class="input-group">
+              <div class="input-label">ACCOUNT / USER ID</div>
+              <input class="inp" id="cfg-userid" placeholder="e.g. 12345678" type="number">
+            </div>
+            <div class="input-group">
+              <div class="input-label">GROUP ID (opsional)</div>
+              <input class="inp" id="cfg-groupid" placeholder="e.g. 87654321" type="number">
+            </div>
+          </div>
+          <div class="toggle-row">
+            <span style="font-size:13px">Gunakan Group sebagai uploader</span>
+            <label class="toggle"><input type="checkbox" id="cfg-usegroup"><span class="toggle-slider"></span></label>
+          </div>
+          <div class="btn-row">
+            <button class="btn btn-primary" onclick="saveConfig()">💾 Simpan Config</button>
+            <button class="btn btn-ghost" onclick="testConnection()">🔌 Test Koneksi</button>
+            <button class="btn btn-danger btn-sm" onclick="clearConfig()">🗑</button>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-title">🔌 Connection Status</div>
+        <div class="config-card" id="conn-status-card">
+          <div style="font-size:12px;font-family:'JetBrains Mono',monospace;color:var(--text-muted)">
+            Belum ditest — klik "Test Koneksi"
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-title">⚙️ Spoof Settings</div>
+        <div class="config-card">
+          <div class="toggle-row">
+            <span style="font-size:13px">Auto-upload setelah spoof</span>
+            <label class="toggle"><input type="checkbox" id="cfg-autoupload"><span class="toggle-slider"></span></label>
+          </div>
+          <div class="toggle-row">
+            <span style="font-size:13px">Randomize asset name</span>
+            <label class="toggle"><input type="checkbox" id="cfg-randname" checked><span class="toggle-slider"></span></label>
+          </div>
+          <div class="toggle-row">
+            <span style="font-size:13px">Log semua request</span>
+            <label class="toggle"><input type="checkbox" id="cfg-verbose" checked><span class="toggle-slider"></span></label>
+          </div>
+          <div class="input-group">
+            <div class="input-label">REQUEST TIMEOUT (ms)</div>
+            <input class="inp" id="cfg-timeout" type="number" value="10000" min="1000">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ LOG PAGE ══ -->
+    <div class="page" id="page-log">
+      <div>
+        <div class="section-title">📋 Full Activity Log</div>
+        <div class="log-box" id="full-log" style="max-height:60vh">
+          <div class="log-line"><span class="log-time">00:00:00</span><span class="log-info">AL STUDIO Asset Spoofer initialized</span></div>
+          <div class="log-line"><span class="log-time">00:00:00</span><span class="log-info">Waiting for API configuration...</span></div>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-ghost" onclick="clearLogs()">🗑 Clear Log</button>
+        <button class="btn btn-ghost" onclick="exportLog()">⬇ Export Log</button>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+</div><!-- /app -->
+
+<!-- TOAST -->
+<div class="toast-wrap" id="toast-wrap"></div>
+
+<!-- MODAL CONFIRM -->
+<div class="modal-wrap" id="modal-wrap">
+  <div class="modal">
+    <div class="modal-title" id="modal-title">Konfirmasi</div>
+    <div id="modal-body" style="font-size:13px;color:var(--text-muted);line-height:1.6"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal()">Batal</button>
+      <button class="btn btn-primary btn-sm" id="modal-ok-btn">OK</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── STATE ──────────────────────────────────────────────────────
+const state = {
+  ids: [],
+  uploadQueue: [],
+  results: [],
+  logs: [],
+  config: {},
+  spoofing: false,
+  uploading: false,
+}
+
+// ── NAV ──────────────────────────────────────────────────────
+const pageTitles = {
+  spoofer: '🎭 Asset Spoofer',
+  fetch:   '🔍 Fetch by ID',
+  upload:  '☁️ Upload Roblox',
+  export:  '📦 Export RBXM',
+  config:  '⚙️ API Config',
+  log:     '📋 Activity Log',
+}
+
+function switchPage(id, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'))
+  document.getElementById('page-' + id).classList.add('active')
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'))
+  if (el) el.classList.add('active')
+  document.getElementById('page-title').textContent = pageTitles[id] || id
+}
+
+// ── TOAST ──────────────────────────────────────────────────────
+function toast(msg, type = 'info', dur = 3000) {
+  const wrap = document.getElementById('toast-wrap')
+  const t = document.createElement('div')
+  t.className = 'toast ' + type
+  t.innerHTML = (type === 'ok' ? '✓ ' : type === 'err' ? '✗ ' : 'ℹ ') + msg
+  wrap.appendChild(t)
+  setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity .3s'; setTimeout(() => t.remove(), 300) }, dur)
+}
+
+// ── LOG ──────────────────────────────────────────────────────
+function addLog(msg, type = 'info') {
+  const now = new Date()
+  const time = now.toTimeString().slice(0, 8)
+  state.logs.push({ time, msg, type })
+  const box = document.getElementById('full-log')
+  const line = document.createElement('div')
+  line.className = 'log-line'
+  line.innerHTML = `<span class="log-time">${time}</span><span class="log-${type}">${msg}</span>`
+  box.appendChild(line)
+  box.scrollTop = box.scrollHeight
+}
+
+// ── IDs ──────────────────────────────────────────────────────
+function renderIDList() {
+  const list = document.getElementById('id-list')
+  document.getElementById('queue-count').textContent = state.ids.length
+  document.getElementById('stat-total').textContent = state.ids.length
+  if (!state.ids.length) {
+    list.innerHTML = '<div class="empty-list">Belum ada ID — drop file atau input manual</div>'
+    return
+  }
+  list.innerHTML = state.ids.map((item, i) => `
+    <div class="id-item">
+      <span class="id-num">${item.id}</span>
+      <span class="id-name">${item.type}</span>
+      <span class="id-status status-${item.status}">${item.status}</span>
+      <span class="id-remove" onclick="removeID(${i})">✕</span>
+    </div>
+  `).join('')
+}
+
+function addManualID() {
+  const id = document.getElementById('manual-id').value.trim()
+  const type = document.getElementById('manual-type').value
+  if (!id || isNaN(id)) { toast('ID tidak valid', 'err'); return }
+  if (state.ids.find(x => x.id === id)) { toast('ID sudah ada', 'warn'); return }
+  state.ids.push({ id, type, status: 'pending' })
+  document.getElementById('manual-id').value = ''
+  renderIDList()
+  addLog('Added ID: ' + id + ' [' + type + ']', 'info')
+  toast('ID ' + id + ' ditambahkan', 'ok')
+}
+
+function removeID(i) {
+  const removed = state.ids.splice(i, 1)
+  renderIDList()
+  toast('ID ' + removed[0].id + ' dihapus', 'info')
+}
+
+function clearAll() {
+  if (!state.ids.length) return
+  showModal('Clear All IDs', 'Hapus semua ' + state.ids.length + ' ID dari queue?', () => {
+    state.ids = []
+    state.results = []
+    renderIDList()
+    renderResults()
+    setProgress(0, 'Idle')
+    toast('Queue cleared', 'info')
+  })
+}
+
+// ── DROP ZONE ──────────────────────────────────────────────────
+const dz = document.getElementById('dropzone')
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('dragover') })
+dz.addEventListener('dragleave', () => dz.classList.remove('dragover'))
+dz.addEventListener('drop', e => {
+  e.preventDefault(); dz.classList.remove('dragover')
+  handleFiles(e.dataTransfer.files)
+})
+document.getElementById('file-input').addEventListener('change', e => handleFiles(e.target.files))
+
+function handleFiles(files) {
+  Array.from(files).forEach(file => {
+    const reader = new FileReader()
+    reader.onload = e => {
+      const lines = e.target.result.split(/[\n,;\s]+/)
+      let added = 0
+      lines.forEach(line => {
+        const id = line.trim()
+        if (id && !isNaN(id) && id.length > 4 && !state.ids.find(x => x.id === id)) {
+          state.ids.push({ id, type: 'audio', status: 'pending' })
+          added++
+        }
+      })
+      renderIDList()
+      toast(added + ' IDs loaded dari ' + file.name, 'ok')
+      addLog('File loaded: ' + file.name + ' → ' + added + ' IDs', 'ok')
+    }
+    reader.readAsText(file)
+  })
+}
+
+// ── SPOOF / UPLOAD ─────────────────────────────────────────────
+function setProgress(pct, label) {
+  document.getElementById('progress-bar').style.width = pct + '%'
+  document.getElementById('prog-pct').textContent = Math.round(pct) + '%'
+  document.getElementById('prog-label').textContent = label
+}
+
+function logSpoof(msg, type = 'info') {
+  const box  = document.getElementById('spoof-log')
+  const time = new Date().toTimeString().slice(0, 8)
+  const line = document.createElement('div')
+  line.className = 'log-line'
+  line.innerHTML = `<span class="log-time">${time}</span><span class="log-${type}">${msg}</span>`
+  box.appendChild(line)
+  box.scrollTop = box.scrollHeight
+  addLog('[SPOOF] ' + msg, type)
+}
+
+function updateSpoofStats() {
+  const done = state.results.filter(r => r.status === 'done').length
+  const fail = state.results.filter(r => r.status === 'error').length
+  const rbxm = state.results.filter(r => r.rbxmBlob).length
+  document.getElementById('stat-total').textContent = state.ids.length
+  document.getElementById('stat-done').textContent  = done
+  document.getElementById('stat-fail').textContent  = fail
+  document.getElementById('stat-rbxm').textContent  = rbxm
+}
+
+async function startSpoof() {
+  if (state.spoofing) return
+  if (!state.ids.length) { toast('Tambahkan IDs dulu', 'err'); return }
+
+  const apikey   = document.getElementById('sp-apikey').value.trim()
+  const userId   = document.getElementById('sp-userid').value.trim()
+  const groupId  = document.getElementById('sp-groupid').value.trim()
+  const useGroup = document.getElementById('sp-usegroup').checked
+  const assetType= document.getElementById('sp-assettype').value
+  const prefix   = document.getElementById('sp-prefix').value || 'AL_'
+  const delay    = parseInt(document.getElementById('sp-delay').value) || 1200
+
+  if (!apikey) { toast('API Key wajib diisi', 'err'); return }
+  if (!userId && !groupId) { toast('User ID atau Group ID wajib diisi', 'err'); return }
+  if (useGroup && !groupId) { toast('Group ID kosong', 'err'); return }
+
+  state.spoofing = true
+  state.results  = []
+  renderResults()
+  logSpoof(`Job dimulai — ${state.ids.length} IDs [${assetType}]`, 'info')
+
+  // ROBLOX_ASSET_TYPE map
+  const typeMap = { audio:'Audio', animation:'Animation', image:'Decal', model:'Model' }
+  const extMap  = { audio:'.ogg', animation:'.rbxm', image:'.png', model:'.rbxm' }
+
+  for (let i = 0; i < state.ids.length; i++) {
+    const item = state.ids[i]
+    item.status = 'uploading'
+    renderIDList()
+    setProgress(((i) / state.ids.length) * 100, `[${i+1}/${state.ids.length}] Fetching ${item.id}...`)
+
+    const result = { orig: item.id, type: assetType, newId: null, status: 'error', rbxmBlob: null, rbxmName: null }
+
+    try {
+      // ── STEP 1: Fetch asset dari Roblox CDN ──────────────────
+      let assetBlob = null
+      const cdnUrls = [
+        `https://assetdelivery.roblox.com/v1/asset/?id=${item.id}`,
+        `https://assetdelivery.roblox.com/v2/assetHash/${item.id}`,
+      ]
+      for (const url of cdnUrls) {
+        try {
+          const r = await fetch(url, { credentials: 'include' })
+          if (r.ok) { const b = await r.blob(); if (b.size > 50) { assetBlob = b; break } }
+        } catch (e) { /* try next */ }
+      }
+
+      let uploadFile
+      let rbxmContent
+      const fname = prefix + item.id + (extMap[assetType] || '.rbxm')
+
+      if (assetBlob) {
+        uploadFile = new File([assetBlob], fname, { type: assetBlob.type || 'application/octet-stream' })
+        logSpoof(`✓ Fetched: ${item.id} (${formatSize(assetBlob.size)})`, 'ok')
+      } else {
+        // Fallback: buat .rbxm wrapper dari ID (asset privat / CDN gagal)
+        rbxmContent = buildRBXMWrapper(item.id, assetType)
+        const wBlob = new Blob([rbxmContent], { type: 'text/xml' })
+        uploadFile  = new File([wBlob], fname, { type: 'text/xml' })
+        logSpoof(`⚠ CDN fail — wrapper .rbxm untuk ${item.id}`, 'warn')
+      }
+
+      // ── STEP 2: Build .rbxm placeholder (akan di-update setelah dapat newId) ──
+      result.rbxmName = `AL_${item.id}.rbxm`
+
+      // ── STEP 3: Upload ke Roblox via Open Cloud API ───────────
+      setProgress(((i + 0.5) / state.ids.length) * 100, `[${i+1}/${state.ids.length}] Uploading ${item.id}...`)
+      logSpoof(`Uploading: ${item.id} → Roblox [${assetType}]...`, 'info')
+
+      const randSufx  = Math.random().toString(36).slice(2, 6).toUpperCase()
+      const assetName = prefix + item.id + '_' + randSufx
+      const creator   = useGroup ? { groupId: String(groupId) } : { userId: String(userId) }
+
+      const meta = JSON.stringify({
+        assetType:       typeMap[assetType] || 'Model',
+        displayName:     assetName,
+        description:     'AL STUDIO Spoofer',
+        creationContext: { creator, expectedPrice: 0 },
+      })
+
+      const form = new FormData()
+      form.append('request',     new Blob([meta], { type: 'application/json' }))
+      form.append('fileContent', uploadFile, uploadFile.name)
+
+      const ctrl  = new AbortController()
+      const timer = setTimeout(() => ctrl.abort(), 20000)
+      let res
+      try {
+        res = await fetch('https://apis.roblox.com/assets/v1/assets', {
+          method:  'POST',
+          headers: { 'x-api-key': apikey },
+          body:    form,
+          signal:  ctrl.signal,
+        })
+      } finally { clearTimeout(timer) }
+
+      const text = await res.text()
+      let data
+      try { data = JSON.parse(text) } catch { data = { raw: text } }
+
+      if (!res.ok) {
+        const msg = data?.message || data?.errors?.[0]?.message || text || res.statusText
+        if (res.status === 403) throw new Error(`403 — API Key scope Assets:Write diperlukan`)
+        if (res.status === 401) throw new Error(`401 — API Key invalid/expired`)
+        if (res.status === 429) throw new Error(`429 — Rate limited, naikkan delay`)
+        throw new Error(`HTTP ${res.status} — ${msg}`)
+      }
+
+      // Poll async operation (audio/animation)
+      let finalData = data
+      if (data.path && data.path.includes('operations')) {
+        logSpoof(`Polling operation: ${item.id}...`, 'info')
+        finalData = await pollSpoofOp(data.path, apikey)
+      }
+
+      const newId = finalData?.assetId || finalData?.response?.assetId || finalData?.id || null
+      result.newId   = newId ? String(newId) : '(processing)'
+      result.status  = 'done'
+      item.status    = 'done'
+
+      // Build .rbxm dengan newId (ID aktif di akun lo)
+      const rbxmId   = newId ? String(newId) : item.id
+      const rbxmXML  = buildRBXMWrapper(rbxmId, assetType, item.id, prefix)
+      result.rbxmBlob = new Blob([rbxmXML], { type: 'text/xml' })
+      result.rbxmName = `${prefix}${rbxmId}.rbxm`
+
+      logSpoof(`✓ Done: ${item.id} → ${newId} | .rbxm ready`, 'ok')
+
+    } catch (e) {
+      item.status   = 'error'
+      result.status = 'error'
+      result.newId  = 'ERROR'
+      // Tetap build rbxm dengan origId sebagai fallback
+      const errXml   = buildRBXMWrapper(item.id, assetType, null, prefix)
+      result.rbxmBlob = new Blob([errXml], { type: 'text/xml' })
+      result.rbxmName = `${prefix}${item.id}_orig.rbxm`
+      logSpoof(`✗ ${item.id}: ${e.message}`, 'err')
+    }
+
+    state.results.push(result)
+    renderIDList()
+    renderResults()
+    updateSpoofStats()
+    await sleep(delay)
+  }
+
+  setProgress(100, 'Complete!')
+  state.spoofing = false
+  const done = state.results.filter(r => r.status === 'done').length
+  const fail = state.results.filter(r => r.status === 'error').length
+  toast(`Upload selesai — ${done} OK, ${fail} gagal`, done > 0 ? 'ok' : 'err')
+  logSpoof(`Complete — ${done} uploaded, ${fail} gagal`, done > 0 ? 'ok' : 'err')
+  updateSpoofStats()
+}
+
+// Poll async Roblox operation (untuk audio/animation yang async)
+async function pollSpoofOp(opPath, apikey) {
+  const url      = 'https://apis.roblox.com/' + opPath.replace(/^\//, '')
+  const deadline = Date.now() + 60000 // max 60s poll
+  while (Date.now() < deadline) {
+    await sleep(2500)
+    try {
+      const res  = await fetch(url, { headers: { 'x-api-key': apikey } })
+      const data = await res.json()
+      if (data.done) {
+        if (data.error) throw new Error(data.error.message || 'Operation failed')
+        return data.response || data
+      }
+    } catch (e) { /* keep polling */ }
+  }
+  throw new Error('Operation timeout — cek Roblox Create dashboard')
+}
+
+// Build .rbxm XML — newId = ID aktif di akun, origId = ID asli (opsional untuk komentar)
+function buildRBXMWrapper(newId, type, origId = null, prefix = 'AL_') {
+  const label = prefix + newId
+  const orig  = origId ? ` <!-- orig: ${origId} -->` : ''
+  const inner = {
+    audio: `<Item class="Sound">
+      <Properties>
+        <string name="Name">${label}</string>
+        <Content name="SoundId"><url>rbxassetid://${newId}</url></Content>
+        <bool name="Looped">false</bool>
+        <float name="Volume">0.5</float>
+        <bool name="Playing">false</bool>
+      </Properties>
+    </Item>`,
+    animation: `<Item class="Animation">
+      <Properties>
+        <string name="Name">${label}</string>
+        <Content name="AnimationId"><url>rbxassetid://${newId}</url></Content>
+      </Properties>
+    </Item>`,
+    image: `<Item class="Decal">
+      <Properties>
+        <string name="Name">${label}</string>
+        <Content name="Texture"><url>rbxassetid://${newId}</url></Content>
+        <float name="Transparency">0</float>
+      </Properties>
+    </Item>`,
+    decal: `<Item class="Decal">
+      <Properties>
+        <string name="Name">${label}</string>
+        <Content name="Texture"><url>rbxassetid://${newId}</url></Content>
+      </Properties>
+    </Item>`,
+    model: `<Item class="Model">
+      <Properties>
+        <string name="Name">${label}</string>
+      </Properties>
+    </Item>`,
+  }
+  return `<?xml version="1.0" encoding="utf-8"?>
+<roblox xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.roblox.com/roblox.xsd" version="4">
+  <!-- AL STUDIO Asset Spoofer — newId: ${newId}${orig} -->
+  ${(inner[type] || inner.model).trim()}
+</roblox>`
+}
+
+function renderResults() {
+  const grid = document.getElementById('result-grid')
+  if (!state.results.length) {
+    grid.innerHTML = '<div style="text-align:center;color:var(--text-muted);font-size:12px;font-family:\'JetBrains Mono\',monospace;padding:16px">Hasil muncul di sini setelah upload selesai</div>'
+    return
+  }
+  grid.innerHTML = state.results.map((r, i) => `
+    <div class="result-item">
+      <span class="result-id" style="font-size:11px">${r.orig}</span>
+      <span class="result-type">[${r.type}]</span>
+      <span style="color:var(--text-muted);font-size:11px">→</span>
+      <span class="result-new-id" style="font-size:11px;color:${r.status==='done'?'var(--success)':'var(--danger)'}">${r.newId || '-'}</span>
+      <span class="id-status status-${r.status}" style="font-size:9px">${r.status}</span>
+      ${r.rbxmBlob ? `<span class="result-copy" onclick="downloadSpoofRBXM(${i})" title="Download .rbxm">⬇</span>` : ''}
+      ${r.newId && r.status==='done' ? `<span class="result-copy" onclick="copyText('${r.newId}')" title="Copy ID">📋</span>` : ''}
+    </div>
+  `).join('')
+}
+
+function downloadSpoofRBXM(i) {
+  const r = state.results[i]
+  if (!r?.rbxmBlob) { toast('Tidak ada file', 'err'); return }
+  const url = URL.createObjectURL(r.rbxmBlob)
+  const a   = document.createElement('a')
+  a.href = url; a.download = r.rbxmName || `AL_${r.orig}.rbxm`; a.click()
+  URL.revokeObjectURL(url)
+  toast(`Downloaded: ${r.rbxmName}`, 'ok')
+}
+
+async function downloadAllSpoofRBXM() {
+  const ready = state.results.filter(r => r.rbxmBlob && r.status === 'done')
+  if (!ready.length) { toast('Tidak ada .rbxm hasil upload', 'err'); return }
+
+  // Jika hanya 1 file — download langsung
+  if (ready.length === 1) {
+    downloadSpoofRBXM(state.results.indexOf(ready[0]))
+    return
+  }
+
+  toast(`Bundling ${ready.length} .rbxm ke ZIP...`, 'info')
+
+  try {
+    // Load JSZip dari CDN
+    if (!window.JSZip) {
+      await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js')
+    }
+    const zip = new JSZip()
+    const folder = zip.folder('AL_STUDIO_rbxm')
+
+    for (const r of ready) {
+      const fname = r.rbxmName || `AL_${r.newId || r.orig}.rbxm`
+      const text  = await r.rbxmBlob.text()
+      folder.file(fname, text)
+    }
+
+    const content = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } })
+    const url = URL.createObjectURL(content)
+    const a   = document.createElement('a')
+    a.href = url
+    a.download = `AL_STUDIO_${ready.length}assets_${Date.now()}.zip`
+    a.click()
+    URL.revokeObjectURL(url)
+    toast(`ZIP downloaded — ${ready.length} .rbxm files`, 'ok')
+    addLog(`Downloaded ZIP: ${ready.length} .rbxm files`, 'ok')
+  } catch (e) {
+    // Fallback: download satu-satu kalau JSZip gagal load
+    addLog('JSZip gagal, fallback ke download satu-satu: ' + e.message, 'warn')
+    ready.forEach((r, i) => {
+      setTimeout(() => {
+        const url = URL.createObjectURL(r.rbxmBlob)
+        const a   = document.createElement('a')
+        a.href = url; a.download = r.rbxmName || `AL_${r.orig}.rbxm`; a.click()
+        URL.revokeObjectURL(url)
+      }, i * 300)
+    })
+    toast(`Downloading ${ready.length} files...`, 'info')
+  }
+}
+
+// Dynamic script loader
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    if (document.querySelector(`script[src="${src}"]`)) { resolve(); return }
+    const s = document.createElement('script')
+    s.src = src; s.onload = resolve; s.onerror = reject
+    document.head.appendChild(s)
+  })
+}
+
+function exportSpoofIDs() {
+  const done = state.results.filter(r => r.status === 'done')
+  if (!done.length) { toast('Tidak ada hasil', 'err'); return }
+  const txt = done.map(r => `${r.orig} → ${r.newId}`).join('\n')
+  downloadText(txt, 'al_studio_spoof_ids.txt')
+  toast('IDs exported', 'ok')
+}
+
+function exportTxt() {
+  if (!state.ids.length) { toast('Tidak ada IDs', 'err'); return }
+  const txt = state.ids.map(x => x.id).join('\n')
+  downloadText(txt, 'al_studio_ids.txt')
+  toast('IDs exported', 'ok')
+}
+
+// ── UPLOAD ──────────────────────────────────────────────────────
+const udz = document.getElementById('upload-dropzone')
+udz.addEventListener('dragover', e => { e.preventDefault(); udz.classList.add('dragover') })
+udz.addEventListener('dragleave', () => udz.classList.remove('dragover'))
+udz.addEventListener('drop', e => {
+  e.preventDefault(); udz.classList.remove('dragover')
+  handleUploadFiles(e.dataTransfer.files)
+})
+document.getElementById('upload-file-input').addEventListener('change', e => handleUploadFiles(e.target.files))
+
+function handleUploadFiles(files) {
+  Array.from(files).forEach(file => {
+    state.uploadQueue.push({ name: file.name, size: file.size, file, status: 'pending' })
+  })
+  renderUploadQueue()
+  toast(files.length + ' file ditambahkan ke queue', 'ok')
+}
+
+function renderUploadQueue() {
+  const list = document.getElementById('upload-queue')
+  if (!state.uploadQueue.length) {
+    list.innerHTML = '<div class="empty-list">Belum ada file di queue</div>'; return
+  }
+  list.innerHTML = state.uploadQueue.map((f, i) => `
+    <div class="id-item">
+      <span class="id-num" style="font-size:11px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${f.name}</span>
+      <span class="id-name">${formatSize(f.size)}</span>
+      ${f.assetId ? `<span class="id-name" style="color:var(--success);font-family:'JetBrains Mono',monospace">${f.assetId}</span>` : ''}
+      <span class="id-status status-${f.status}">${f.status}</span>
+      <span class="id-remove" onclick="removeUploadFile(${i})">✕</span>
+    </div>
+  `).join('')
+}
+
+function removeUploadFile(i) { state.uploadQueue.splice(i, 1); renderUploadQueue() }
+function clearUploadQueue() { state.uploadQueue = []; renderUploadQueue() }
+function toggleGroupMode() {
+  const on = document.getElementById('toggle-group').checked
+  document.getElementById('group-input').style.display = on ? 'flex' : 'none'
+}
+
+function logUpload(msg, type = 'info') {
+  const box = document.getElementById('upload-log')
+  const time = new Date().toTimeString().slice(0, 8)
+  const line = document.createElement('div')
+  line.className = 'log-line'
+  line.innerHTML = `<span class="log-time">${time}</span><span class="log-${type}">${msg}</span>`
+  box.appendChild(line)
+  box.scrollTop = box.scrollHeight
+  addLog('[UPLOAD] ' + msg, type)
+}
+
+async function startUpload() {
+  if (state.uploading) return
+  const apikey = document.getElementById('cfg-apikey').value.trim()
+  if (!apikey) { toast('API Key belum dikonfigurasi — pergi ke Config', 'err'); return }
+  if (!state.uploadQueue.length) { toast('Upload queue kosong', 'err'); return }
+  state.uploading = true
+  const delay = parseInt(document.getElementById('upload-delay').value) || 1200
+  const prefix = document.getElementById('upload-prefix').value || 'AL_STUDIO_'
+  const type = document.getElementById('upload-type').value
+  logUpload('Upload job started — ' + state.uploadQueue.length + ' files', 'info')
+
+  for (let i = 0; i < state.uploadQueue.length; i++) {
+    const f = state.uploadQueue[i]
+    f.status = 'uploading'
+    renderUploadQueue()
+    const pct = ((i + 1) / state.uploadQueue.length) * 100
+    document.getElementById('upload-progress-bar').style.width = pct + '%'
+    document.getElementById('up-prog-pct').textContent = Math.round(pct) + '%'
+    document.getElementById('up-prog-label').textContent = 'Uploading ' + f.name
+
+    logUpload('Uploading: ' + f.name + ' → Roblox [' + type + ']', 'info')
+
+    try {
+      const result = await uploadToRoblox(f, apikey, prefix, type)
+      f.status = 'done'
+      // Extract asset ID dari response Roblox
+      const assetId = result?.assetId
+        || result?.response?.assetId
+        || result?.id
+        || result?.assetOperationId
+        || '(check creations)'
+      f.assetId = assetId
+      logUpload('✓ Uploaded: ' + f.name + ' → assetId: ' + assetId, 'ok')
+      // Tambah ke results untuk export
+      state.results.push({
+        orig: f.name,
+        type: type,
+        newId: String(assetId),
+      })
+    } catch (e) {
+      f.status = 'error'
+      logUpload('✗ Error: ' + f.name + ' — ' + e.message, 'err')
+      if (e.message.includes('403')) {
+        logUpload('  → Pastikan API Key punya permission: Assets:Write', 'warn')
+      }
+      if (e.message.includes('401')) {
+        logUpload('  → API Key tidak valid atau expired', 'warn')
+      }
+      if (e.message.includes('429')) {
+        logUpload('  → Rate limited — naikkan Upload Delay di atas 2000ms', 'warn')
+      }
+    }
+
+    renderUploadQueue()
+    await sleep(delay)
+  }
+
+  state.uploading = false
+  document.getElementById('up-prog-label').textContent = 'Complete!'
+  toast('Upload selesai!', 'ok')
+  logUpload('All uploads complete', 'ok')
+}
+
+// ── ROBLOX ASSET TYPE MAP ──────────────────────────────────────
+const ROBLOX_ASSET_TYPE = {
+  audio:     'Audio',
+  animation: 'Animation',
+  image:     'Decal',
+  decal:     'Decal',
+  model:     'Model',
+}
+
+// Asset type → legacy publish endpoint assetTypeId
+const LEGACY_TYPE_ID = {
+  audio:     3,
+  animation: 24,
+  image:     13,
+  decal:     13,
+  model:     10,
+}
+
+// Toggle cookie field di Upload page
+function toggleUploadAuth() {
+  const method = document.getElementById('upload-auth-method').value
+  const cookieBlock = document.getElementById('upload-cookie-block')
+  cookieBlock.style.display = method === 'cookie' ? 'flex' : 'none'
+  cookieBlock.style.flexDirection = 'column'
+}
+
+// ── CSRF TOKEN FETCH (untuk cookie auth) ──────────────────────
+// Roblox butuh X-CSRF-Token untuk POST request via cookie
+async function fetchCSRFToken(cookie) {
+  // POST ke logout endpoint — selalu return 403 + set X-CSRF-Token header
+  try {
+    const res = await fetch('https://auth.roblox.com/v2/logout', {
+      method: 'POST',
+      headers: {
+        'Cookie': `.ROBLOSECURITY=${cookie}`,
+        'Content-Length': '0',
+      },
+      credentials: 'omit',
+    })
+    const token = res.headers.get('x-csrf-token')
+    if (token) return token
+  } catch (e) { /* CORS on preflight — try alternative */ }
+
+  // Alternative: POST ke /v1/authentication-ticket
+  try {
+    const res = await fetch('https://auth.roblox.com/v1/authentication-ticket', {
+      method: 'POST',
+      headers: { 'Cookie': `.ROBLOSECURITY=${cookie}` },
+      credentials: 'omit',
+    })
+    const token = res.headers.get('x-csrf-token')
+    if (token) return token
+  } catch (e) { /* ignore */ }
+
+  return null
+}
+
+// ── UPLOAD VIA COOKIE (legacy publish endpoint, bypass CORS) ──
+// POST ke https://publish.roblox.com/v1/assets/upload — support cookie auth
+// Endpoint ini menggunakan multipart biasa, CORS-nya lebih permissive
+async function uploadViaCookie(fileItem, cookie, prefix, assetType, userId, groupId, useGroup) {
+  const baseName  = (fileItem.file?.name || fileItem.name || 'asset').replace(/\.[^.]+$/, '')
+  const randSufx  = Math.random().toString(36).slice(2, 7).toUpperCase()
+  const assetName = (prefix || 'AL_STUDIO_') + baseName + '_' + randSufx
+  const typeId    = LEGACY_TYPE_ID[assetType] || 10
+  const timeout   = parseInt(document.getElementById('cfg-timeout')?.value || 10000)
+
+  // 1. Ambil CSRF token dulu
+  addLog('[UPLOAD] Fetching CSRF token...', 'info')
+  const csrf = await fetchCSRFToken(cookie)
+  if (!csrf) {
+    addLog('[UPLOAD] ⚠ CSRF token tidak didapat — CORS mungkin block preflight. Coba dari ekstensi browser.', 'warn')
+  }
+
+  // 2. Build form
+  const form = new FormData()
+  form.append('file', fileItem.file || new File([fileItem.blob || ''], fileItem.name || 'asset.rbxm'))
+
+  // Params sebagai query string (legacy endpoint style)
+  const params = new URLSearchParams({
+    name:          assetName,
+    description:   'Uploaded by AL STUDIO',
+    assetTypeId:   typeId,
+    ...(useGroup && groupId ? { groupId } : {}),
+  })
+
+  const endpoint = `https://publish.roblox.com/v1/assets/upload?${params}`
+
+  const headers = {
+    'Cookie': `.ROBLOSECURITY=${cookie}`,
+  }
+  if (csrf) headers['X-CSRF-Token'] = csrf
+
+  const ctrl  = new AbortController()
+  const timer = setTimeout(() => ctrl.abort(), timeout)
+  let res
+  try {
+    res = await fetch(endpoint, {
+      method:      'POST',
+      headers,
+      body:        form,
+      credentials: 'include',
+      signal:      ctrl.signal,
+    })
+  } finally { clearTimeout(timer) }
+
+  const text = await res.text()
+  let data
+  try { data = JSON.parse(text) } catch { data = { raw: text } }
+
+  if (!res.ok) {
+    const msg = data?.message || data?.errors?.[0]?.message || text || res.statusText
+    // Kasih hint spesifik
+    if (res.status === 403 && !csrf) throw new Error(`HTTP 403 — CSRF token gagal didapat. Coba dari browser yang sudah login Roblox, atau pakai API Key.`)
+    throw new Error(`HTTP ${res.status} — ${msg}`)
+  }
+
+  // Legacy endpoint return assetId langsung sebagai number atau { assetId: N }
+  const assetId = data?.assetId || data?.AssetId || (typeof data === 'number' ? data : null)
+  return { assetId: assetId || '(check creations)', raw: data }
+}
+
+// ── UPLOAD VIA OPEN CLOUD API KEY (no proxy) ──────────────────
+async function uploadViaApiKey(fileItem, apikey, prefix, assetType, userId, groupId, useGroup, randName) {
+  const baseName  = (fileItem.file?.name || fileItem.name || 'asset').replace(/\.[^.]+$/, '')
+  const assetName = (prefix || 'AL_STUDIO_') + baseName
+    + (randName ? '_' + Math.random().toString(36).slice(2, 7).toUpperCase() : '')
+  const timeout   = parseInt(document.getElementById('cfg-timeout')?.value || 10000)
+
+  const creator = useGroup ? { groupId: String(groupId) } : { userId: String(userId) }
+
+  const meta = JSON.stringify({
+    assetType:       ROBLOX_ASSET_TYPE[assetType] || 'Model',
+    displayName:     assetName,
+    description:     'Uploaded by AL STUDIO Asset Spoofer',
+    creationContext: { creator, expectedPrice: 0 },
+  })
+
+  const form = new FormData()
+  form.append('request',     new Blob([meta], { type: 'application/json' }))
+  form.append('fileContent', fileItem.file || new File([fileItem.blob || ''], fileItem.name || 'asset'), fileItem.file?.name || fileItem.name || 'asset')
+
+  const ctrl  = new AbortController()
+  const timer = setTimeout(() => ctrl.abort(), timeout)
+  let res
+  try {
+    res = await fetch('https://apis.roblox.com/assets/v1/assets', {
+      method:  'POST',
+      headers: { 'x-api-key': apikey },
+      body:    form,
+      signal:  ctrl.signal,
+    })
+  } finally { clearTimeout(timer) }
+
+  const text = await res.text()
+  let data
+  try { data = JSON.parse(text) } catch { data = { raw: text } }
+
+  if (!res.ok) {
+    const msg = data?.message || data?.errors?.[0]?.message || text || res.statusText
+    if (res.status === 403) throw new Error(`HTTP 403 — Pastikan API Key punya scope: Assets:Write`)
+    if (res.status === 401) throw new Error(`HTTP 401 — API Key invalid atau expired`)
+    if (res.status === 429) throw new Error(`HTTP 429 — Rate limited, naikkan Upload Delay`)
+    throw new Error(`HTTP ${res.status} — ${msg}`)
+  }
+
+  if (data.path && data.path.includes('operations')) {
+    return await pollOperation(data.path, apikey, timeout)
+  }
+  return data
+}
+
+// ── UNIFIED UPLOAD ENTRY POINT ─────────────────────────────────
+async function uploadToRoblox(fileItem, apikey, prefix, assetType) {
+  const useGroup = document.getElementById('cfg-usegroup').checked
+  const userId   = document.getElementById('cfg-userid').value.trim()
+  const groupId  = document.getElementById('cfg-groupid').value.trim()
+  const randName = document.getElementById('cfg-randname').checked
+
+  // Detect auth method — cek upload page dulu, fallback ke cfg
+  const uploadPage   = document.getElementById('upload-auth-method')
+  const authMethod   = uploadPage ? uploadPage.value : 'apikey'
+  const uploadCookie = document.getElementById('upload-cookie')?.value.trim() || ''
+
+  if (authMethod === 'cookie' && uploadCookie) {
+    if (useGroup && !groupId) throw new Error('Group ID kosong — isi di Config')
+    logUpload?.(`Auth: Cookie mode`, 'info')
+    return await uploadViaCookie(fileItem, uploadCookie, prefix, assetType, userId, groupId, useGroup)
+  }
+
+  // API Key mode
+  if (!apikey) throw new Error('API Key kosong — isi di Config atau pilih Cookie mode')
+  if (useGroup && !groupId) throw new Error('Group ID kosong — isi di Config')
+  if (!useGroup && !userId) throw new Error('User ID kosong — isi di Config')
+  return await uploadViaApiKey(fileItem, apikey, prefix, assetType, userId, groupId, useGroup, randName)
+}
+
+// Poll async operation until done
+async function pollOperation(opPath, apikey, timeout) {
+  const deadline  = Date.now() + timeout * 6
+  const url = 'https://apis.roblox.com/' + opPath.replace(/^\//, '')
+
+  while (Date.now() < deadline) {
+    await sleep(2000)
+    const res = await fetch(url, { headers: { 'x-api-key': apikey } })
+    const data = await res.json()
+    if (data.done) {
+      if (data.error) throw new Error(data.error.message || 'Operation failed')
+      return data.response || data
+    }
+  }
+  throw new Error('Upload timeout — asset mungkin tetap diproses Roblox')
+}
+
+// ── EXPORT RBXM ──────────────────────────────────────────────
+function generatePreview() {
+  const name = document.getElementById('export-name').value || 'AL_STUDIO_ASSETS'
+  const fmt = document.getElementById('export-format').value
+  const incAudio = document.getElementById('inc-audio').checked
+  const incAnim = document.getElementById('inc-anim').checked
+  const incMeta = document.getElementById('inc-meta').checked
+
+  const preview = document.getElementById('export-preview')
+  const audioIDs = state.results.filter(r => r.type === 'audio')
+  const animIDs  = state.results.filter(r => r.type === 'animation')
+
+  let lines = []
+  lines.push(`<roblox version="4"> <!-- ${name}.${fmt} -->`)
+  if (incMeta) {
+    lines.push(`  <!-- Generated by AL STUDIO Asset Spoofer -->`)
+    lines.push(`  <!-- Total Assets: ${state.results.length} -->`)
+    lines.push(`  <!-- Generated: ${new Date().toISOString()} -->`)
+  }
+  if (incAudio && audioIDs.length) {
+    lines.push(`  <Item class="SoundService">`)
+    audioIDs.slice(0, 5).forEach(r => {
+      lines.push(`    <Item class="Sound">`)
+      lines.push(`      <Properties>`)
+      lines.push(`        <string name="Name">AL_${r.newId}</string>`)
+      lines.push(`        <Content name="SoundId">rbxassetid://${r.newId}</Content>`)
+      lines.push(`      </Properties>`)
+      lines.push(`    </Item>`)
+    })
+    if (audioIDs.length > 5) lines.push(`    <!-- ... +${audioIDs.length - 5} more -->`)
+    lines.push(`  </Item>`)
+  }
+  if (incAnim && animIDs.length) {
+    lines.push(`  <Item class="Folder" name="Animations">`)
+    animIDs.slice(0, 5).forEach(r => {
+      lines.push(`    <Item class="Animation">`)
+      lines.push(`      <Properties>`)
+      lines.push(`        <string name="Name">Anim_${r.newId}</string>`)
+      lines.push(`        <Content name="AnimationId">rbxassetid://${r.newId}</Content>`)
+      lines.push(`      </Properties>`)
+      lines.push(`    </Item>`)
+    })
+    if (animIDs.length > 5) lines.push(`    <!-- ... +${animIDs.length - 5} more -->`)
+    lines.push(`  </Item>`)
+  }
+  lines.push(`</roblox>`)
+
+  preview.innerHTML = lines.map(l =>
+    `<div class="log-line"><span class="log-info">${escHtml(l)}</span></div>`
+  ).join('')
+  toast('Preview generated', 'ok')
+}
+
+function downloadRBXM() {
+  if (!state.results.length) { toast('Tidak ada hasil spoof — jalankan spoof dulu', 'err'); return }
+  const name = document.getElementById('export-name').value || 'AL_STUDIO_ASSETS'
+  const fmt = document.getElementById('export-format').value
+  generatePreview()
+  const content = buildRBXMContent(name, fmt)
+  downloadText(content, name + '.' + fmt)
+  toast('File ' + name + '.' + fmt + ' downloaded', 'ok')
+  addLog('Exported: ' + name + '.' + fmt, 'ok')
+}
+
+function buildRBXMContent(name, fmt) {
+  const incAudio = document.getElementById('inc-audio').checked
+  const incAnim = document.getElementById('inc-anim').checked
+  const incMeta = document.getElementById('inc-meta').checked
+  const audioIDs = state.results.filter(r => r.type === 'audio')
+  const animIDs  = state.results.filter(r => r.type === 'animation')
+  let lines = []
+  lines.push(`<roblox xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="4">`)
+  if (incMeta) {
+    lines.push(`<!-- Generated by AL STUDIO Asset Spoofer v2.0 -->`)
+    lines.push(`<!-- Total: ${state.results.length} | Date: ${new Date().toISOString()} -->`)
+  }
+  if (incAudio) {
+    lines.push(`<Item class="SoundService"><Properties><string name="Name">SoundService</string></Properties>`)
+    audioIDs.forEach(r => {
+      lines.push(`<Item class="Sound"><Properties><string name="Name">AL_${r.newId}</string><Content name="SoundId">rbxassetid://${r.newId}</Content><bool name="Looped">false</bool><float name="Volume">1</float></Properties></Item>`)
+    })
+    lines.push(`</Item>`)
+  }
+  if (incAnim) {
+    lines.push(`<Item class="Folder"><Properties><string name="Name">AL_Animations</string></Properties>`)
+    animIDs.forEach(r => {
+      lines.push(`<Item class="Animation"><Properties><string name="Name">Anim_${r.newId}</string><Content name="AnimationId">rbxassetid://${r.newId}</Content></Properties></Item>`)
+    })
+    lines.push(`</Item>`)
+  }
+  lines.push(`</roblox>`)
+  return lines.join('\n')
+}
+
+// ── CONFIG ──────────────────────────────────────────────────────
+function saveConfig() {
+  state.config = {
+    apikey: document.getElementById('cfg-apikey').value,
+    userid: document.getElementById('cfg-userid').value,
+    groupid: document.getElementById('cfg-groupid').value,
+    usegroup: document.getElementById('cfg-usegroup').checked,
+    autoupload: document.getElementById('cfg-autoupload').checked,
+    randname: document.getElementById('cfg-randname').checked,
+    timeout: document.getElementById('cfg-timeout').value,
+  }
+  if (state.config.apikey) {
+    document.getElementById('api-status-badge').textContent = '✓ API: Configured'
+    document.getElementById('api-status-badge').style.borderColor = 'var(--success)'
+    document.getElementById('api-status-badge').style.color = 'var(--success)'
+  }
+  toast('Config disimpan', 'ok')
+  addLog('Config saved — UserID: ' + (state.config.userid || 'not set'), 'ok')
+}
+
+function clearConfig() {
+  ['cfg-apikey','cfg-userid','cfg-groupid'].forEach(id => {
+    document.getElementById(id).value = ''
+  })
+  document.getElementById('api-status-badge').textContent = '⚡ API: Not configured'
+  document.getElementById('api-status-badge').style.borderColor = ''
+  document.getElementById('api-status-badge').style.color = ''
+  toast('Config cleared', 'info')
+}
+
+async function testConnection() {
+  const apikey = document.getElementById('cfg-apikey').value.trim()
+  const userId  = document.getElementById('cfg-userid').value.trim()
+  const card    = document.getElementById('conn-status-card')
+
+  card.innerHTML = '<div style="color:var(--blue2);font-size:12px;font-family:\'JetBrains Mono\',monospace">⏳ Testing koneksi ke Roblox...</div>'
+  const t0 = Date.now()
+  const lines = []
+
+  // ── Test 1: users.roblox.com (no auth needed, cek CORS) ──────
+  try {
+    const uid = userId || '1'
+    const res = await fetch(`https://users.roblox.com/v1/users/${uid}`)
+    const data = await res.json().catch(() => ({}))
+    const ms = Date.now() - t0
+    if (res.ok || res.status === 400 || res.status === 404) {
+      lines.push(`<div style="color:var(--success)">✓ Roblox API reachable (${ms}ms)</div>`)
+      if (data.name) lines.push(`<div style="color:var(--text-muted)">User: ${data.name} (ID: ${uid})</div>`)
+      addLog('API reachable — ' + ms + 'ms', 'ok')
+    }
+  } catch (e) {
+    lines.push(`<div style="color:var(--warning)">⚠ users.roblox.com: ${e.message}</div>`)
+  }
+
+  // ── Test 2: API Key via Open Cloud (jika ada) ─────────────────
+  if (apikey) {
+    try {
+      const res = await fetch('https://apis.roblox.com/oauth/v1/token/introspect', {
+        method: 'POST',
+        headers: { 'x-api-key': apikey, 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'token=test',
+      })
+      const ms2 = Date.now() - t0
+      if (res.status === 400 || res.status === 200) {
+        // 400 = endpoint reachable, key valid format
+        lines.push(`<div style="color:var(--success)">✓ Open Cloud reachable — API Key format OK (${ms2}ms)</div>`)
+        lines.push(`<div style="color:var(--text-muted)">Pastikan scope: Assets:Write aktif di creator.roblox.com</div>`)
+        document.getElementById('api-status-badge').textContent = '✓ API: Configured'
+        document.getElementById('api-status-badge').style.borderColor = 'var(--success)'
+        document.getElementById('api-status-badge').style.color = 'var(--success)'
+      } else if (res.status === 401) {
+        lines.push(`<div style="color:var(--danger)">✗ API Key invalid (401) — buat baru di create.roblox.com/credentials</div>`)
+      } else {
+        lines.push(`<div style="color:var(--warning)">⚠ Open Cloud HTTP ${res.status}</div>`)
+      }
+    } catch (e) {
+      lines.push(`<div style="color:var(--warning)">⚠ Open Cloud: ${e.message}</div>`)
+      addLog('Open Cloud test error: ' + e.message, 'warn')
+    }
+  } else {
+    lines.push(`<div style="color:var(--text-muted)">— API Key kosong, skip Open Cloud test</div>`)
+  }
+
+  // ── Test 3: Publish endpoint reachability (untuk cookie mode) ─
+  try {
+    const res = await fetch('https://publish.roblox.com/v1/assets/upload', {
+      method: 'OPTIONS',
+    })
+    lines.push(`<div style="color:var(--success)">✓ publish.roblox.com reachable (cookie mode ready)</div>`)
+  } catch (e) {
+    lines.push(`<div style="color:var(--text-muted)">— publish.roblox.com: ${e.message.includes('CORS') ? 'CORS preflight (normal)' : e.message}</div>`)
+  }
+
+  if (!lines.length) lines.push(`<div style="color:var(--warning)">⚠ Semua test timeout/error — cek koneksi internet</div>`)
+
+  card.innerHTML = `<div style="font-size:12px;font-family:'JetBrains Mono',monospace;display:flex;flex-direction:column;gap:5px">${lines.join('')}</div>`
+  toast('Test selesai', 'ok')
+}
+
+// ── FETCH BY ID ───────────────────────────────────────────────
+
+// Roblox CDN endpoints untuk fetch asset publik
+const CDN_ENDPOINTS = [
+  id => `https://assetdelivery.roblox.com/v1/asset/?id=${id}`,
+  id => `https://assetdelivery.roblox.com/v2/assetHash/${id}`,
+]
+
+const state_fetch = {
+  items: [],    // { id, status, file, newId, error }
+  running: false,
+}
+
+function logFetch(msg, type = 'info') {
+  const box  = document.getElementById('fetch-log')
+  const time = new Date().toTimeString().slice(0, 8)
+  const line = document.createElement('div')
+  line.className = 'log-line'
+  line.innerHTML = `<span class="log-time">${time}</span><span class="log-${type}">${msg}</span>`
+  box.appendChild(line)
+  box.scrollTop = box.scrollHeight
+  addLog('[FETCH] ' + msg, type)
+}
+
+function setFetchProgress(pct, label) {
+  document.getElementById('fetch-progress-bar').style.width = pct + '%'
+  document.getElementById('fetch-prog-pct').textContent = Math.round(pct) + '%'
+  document.getElementById('fetch-prog-label').textContent = label
+}
+
+function renderFetchResults() {
+  const list  = document.getElementById('fetch-result-list')
+  const count = state_fetch.items.length
+  document.getElementById('fetch-result-count').textContent = count
+  if (!count) {
+    list.innerHTML = '<div class="empty-list">Hasil fetch muncul di sini</div>'
+    return
+  }
+  list.innerHTML = state_fetch.items.map((item, i) => `
+    <div class="id-item">
+      <span class="id-num">${item.id}</span>
+      <span class="id-name" style="font-size:11px">${item.newId ? '→ ' + item.newId : ''}</span>
+      <span class="id-status status-${item.status}">${item.status}</span>
+      ${item.file ? `<span class="result-copy" onclick="downloadSingleRBXM(${i})" title="Download file">⬇</span>` : ''}
+      ${item.newId ? `<span class="result-copy" onclick="copyText('${item.newId}')" title="Copy new ID">📋</span>` : ''}
+    </div>
+  `).join('')
+}
+
+function clearFetchQueue() {
+  state_fetch.items = []
+  document.getElementById('fetch-ids-input').value = ''
+  renderFetchResults()
+  setFetchProgress(0, 'Idle')
+}
+
+// Try fetch asset blob dari Roblox CDN (direct, no proxy)
+async function fetchAssetBlob(id) {
+  for (const ep of CDN_ENDPOINTS) {
+    try {
+      const res = await fetch(ep(id), { method: 'GET', credentials: 'include' })
+      if (res.ok) {
+        const blob = await res.blob()
+        if (blob.size > 0) return { blob, url: ep(id) }
+      }
+    } catch (e) { /* try next */ }
+  }
+  throw new Error('Asset tidak ditemukan atau privat — gunakan Re-upload Privat dengan cookie auth')
+}
+
+// Wrap blob sebagai fake File untuk uploadToRoblox
+function blobToFile(blob, filename) {
+  return new File([blob], filename, { type: blob.type || 'application/octet-stream' })
+}
+
+// Build minimal .rbxm XML dari blob
+function buildRBXMFromBlob(id, assetType, blob) {
+  const typeMap = {
+    audio: `<Item class="Sound"><Properties><string name="Name">AL_${id}</string><Content name="SoundId">rbxassetid://${id}</Content><bool name="Looped">false</bool><float name="Volume">1</float></Properties></Item>`,
+    animation: `<Item class="Animation"><Properties><string name="Name">Anim_${id}</string><Content name="AnimationId">rbxassetid://${id}</Content></Properties></Item>`,
+    image: `<Item class="Decal"><Properties><string name="Name">Decal_${id}</string><Content name="Texture">rbxassetid://${id}</Content></Properties></Item>`,
+    model: `<Item class="Model"><Properties><string name="Name">Model_${id}</string></Properties></Item>`,
+  }
+  const inner = typeMap[assetType] || typeMap.audio
+  return `<?xml version="1.0" encoding="utf-8"?>\n<roblox version="4">\n<!-- AL STUDIO — Fetched ID: ${id} -->\n${inner}\n</roblox>`
+}
+
+async function startFetch() {
+  if (state_fetch.running) return
+
+  const raw    = document.getElementById('fetch-ids-input').value.trim()
+  const type   = document.getElementById('fetch-type').value
+  const action = document.getElementById('fetch-action').value
+  const apikey = document.getElementById('cfg-apikey').value.trim()
+
+  if (!raw) { toast('Masukkan ID dulu', 'err'); return }
+  if ((action === 'upload' || action === 'both') && !apikey) {
+    toast('API Key belum diisi — pergi ke Config', 'err'); return
+  }
+
+  // Parse IDs
+  const ids = raw.split(/[\n,;\s]+/).map(x => x.trim()).filter(x => x && !isNaN(x))
+  if (!ids.length) { toast('Tidak ada ID valid', 'err'); return }
+
+  state_fetch.running = true
+  state_fetch.items   = ids.map(id => ({ id, status: 'pending', file: null, newId: null, error: null }))
+  renderFetchResults()
+  logFetch('Fetch job started — ' + ids.length + ' IDs [' + type + '] action: ' + action, 'info')
+
+  const prefix = document.getElementById('upload-prefix')?.value || 'AL_STUDIO_'
+
+  for (let i = 0; i < state_fetch.items.length; i++) {
+    const item = state_fetch.items[i]
+    item.status = 'uploading'
+    renderFetchResults()
+    setFetchProgress((i / state_fetch.items.length) * 100, 'Fetching ID ' + item.id + '...')
+
+    try {
+      // 1. Coba fetch dari CDN
+      let fileObj = null
+      let rbxmContent = null
+
+      try {
+        logFetch('Fetching: ' + item.id + ' dari Roblox CDN...', 'info')
+        const { blob } = await fetchAssetBlob(item.id)
+        const fname = 'AL_' + item.id + (type === 'audio' ? '.ogg' : '.rbxm')
+        fileObj = blobToFile(blob, fname)
+        item.file = { blob, name: fname, type }
+        logFetch('✓ Fetched: ' + item.id + ' (' + formatSize(blob.size) + ')', 'ok')
+      } catch (fetchErr) {
+        // CDN fetch gagal — buat rbxm wrapper dari ID saja
+        logFetch('⚠ CDN fetch gagal: ' + fetchErr.message, 'warn')
+        logFetch('  → Buat .rbxm wrapper dari ID: ' + item.id, 'info')
+        rbxmContent = buildRBXMFromBlob(item.id, type, null)
+        const rbxmBlob = new Blob([rbxmContent], { type: 'text/xml' })
+        fileObj = blobToFile(rbxmBlob, 'AL_' + item.id + '.rbxm')
+        item.file = { blob: rbxmBlob, name: 'AL_' + item.id + '.rbxm', type, isWrapper: true }
+      }
+
+      // 2. Upload ke Roblox jika diminta
+      if (action === 'upload' || action === 'both') {
+        logFetch('Uploading: ' + item.id + ' → Roblox API...', 'info')
+        const fakeItem = { file: fileObj, name: fileObj.name, size: fileObj.size }
+        try {
+          const result = await uploadToRoblox(fakeItem, apikey, prefix, type)
+          const newId  = result?.assetId || result?.response?.assetId || result?.id || '(processing)'
+          item.newId   = String(newId)
+          item.status  = 'done'
+          logFetch('✓ Uploaded: ' + item.id + ' → new ID: ' + newId, 'ok')
+          state.results.push({ orig: item.id, type, newId: String(newId) })
+        } catch (upErr) {
+          item.status = 'error'
+          item.error  = upErr.message
+          logFetch('✗ Upload error: ' + upErr.message, 'err')
+        }
+      } else {
+        // Download only
+        item.status = 'done'
+        item.newId  = item.id + ' (lokal)'
+      }
+
+    } catch (e) {
+      item.status = 'error'
+      item.error  = e.message
+      logFetch('✗ Error ID ' + item.id + ': ' + e.message, 'err')
+    }
+
+    renderFetchResults()
+    await sleep(600)
+  }
+
+  setFetchProgress(100, 'Complete!')
+  const done = state_fetch.items.filter(x => x.status === 'done').length
+  const fail = state_fetch.items.filter(x => x.status === 'error').length
+  logFetch('Fetch complete — ' + done + ' OK, ' + fail + ' error', done > 0 ? 'ok' : 'err')
+  toast(done + ' asset berhasil, ' + fail + ' gagal', done > 0 ? 'ok' : 'err')
+  state_fetch.running = false
+
+  // Auto download semua jika action include download
+  if ((action === 'download' || action === 'both') && done > 0) {
+    await sleep(500)
+    downloadFetchedRBXM()
+  }
+}
+
+function downloadSingleRBXM(i) {
+  const item = state_fetch.items[i]
+  if (!item?.file) return
+  const url = URL.createObjectURL(item.file.blob)
+  const a   = document.createElement('a')
+  a.href     = url
+  a.download = item.file.name
+  a.click()
+  URL.revokeObjectURL(url)
+  toast('Downloaded: ' + item.file.name, 'ok')
+}
+
+function downloadFetchedRBXM() {
+  const done = state_fetch.items.filter(x => x.status === 'done' && x.file)
+  if (!done.length) { toast('Tidak ada file untuk didownload', 'err'); return }
+
+  // Download satu per satu dengan delay
+  done.forEach((item, i) => {
+    setTimeout(() => {
+      const url = URL.createObjectURL(item.file.blob)
+      const a   = document.createElement('a')
+      a.href     = url
+      a.download = item.file.name
+      a.click()
+      URL.revokeObjectURL(url)
+    }, i * 400)
+  })
+  toast('Downloading ' + done.length + ' files...', 'ok')
+}
+
+function exportFetchedIDs() {
+  const done = state_fetch.items.filter(x => x.status === 'done')
+  if (!done.length) { toast('Tidak ada hasil', 'err'); return }
+  const txt = done.map(x => `${x.id} → ${x.newId || x.id}`).join('\n')
+  downloadText(txt, 'al_studio_fetched_ids.txt')
+  toast('IDs exported', 'ok')
+}
+
+// ── UTILS ──────────────────────────────────────────────────────
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)) }
+function formatSize(b) {
+  if (b < 1024) return b + 'B'
+  if (b < 1048576) return (b/1024).toFixed(1) + 'KB'
+  return (b/1048576).toFixed(1) + 'MB'
+}
+function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }
+function copyText(t) {
+  navigator.clipboard.writeText(t).then(() => toast('Copied: ' + t.slice(0,20) + '...', 'ok')).catch(() => toast('Copy failed', 'err'))
+}
+function downloadText(content, filename) {
+  const a = document.createElement('a')
+  a.href = URL.createObjectURL(new Blob([content], { type: 'text/plain' }))
+  a.download = filename
+  a.click()
+}
+function clearLogs() { document.getElementById('full-log').innerHTML = ''; state.logs = [] }
+function exportLog() {
+  const txt = state.logs.map(l => `[${l.time}] [${l.type}] ${l.msg}`).join('\n')
+  downloadText(txt, 'al_studio_log.txt')
+  toast('Log exported', 'ok')
+}
+
+// ── MODAL ──────────────────────────────────────────────────────
+let modalCb = null
+function showModal(title, body, cb) {
+  document.getElementById('modal-title').textContent = title
+  document.getElementById('modal-body').textContent = body
+  document.getElementById('modal-wrap').classList.add('open')
+  modalCb = cb
+}
+function closeModal() { document.getElementById('modal-wrap').classList.remove('open'); modalCb = null }
+document.getElementById('modal-ok-btn').onclick = function() { closeModal(); if (modalCb) modalCb() }
+
+// ── RE-UPLOAD PRIVAT ──────────────────────────────────────────
+// State
+const state_ru = {
+  items:     [],   // from ID input: { id, type, status, file, newId, error }
+  fileQueue: [],   // from file drop: { name, size, file, status, newId }
+  running:   false,
+}
+
+// Register page title
+pageTitles['reupload'] = '🔒 Re-upload Privat'
+
+// ── HELPERS ───────────────────────────────────────────────────
+function logRU(msg, type = 'info') {
+  const box  = document.getElementById('ru-log')
+  const time = new Date().toTimeString().slice(0, 8)
+  const line = document.createElement('div')
+  line.className = 'log-line'
+  line.innerHTML = `<span class="log-time">${time}</span><span class="log-${type}">${msg}</span>`
+  box.appendChild(line)
+  box.scrollTop = box.scrollHeight
+  addLog('[REUP] ' + msg, type)
+}
+
+function setRUProgress(pct, label) {
+  document.getElementById('ru-progress-bar').style.width = pct + '%'
+  document.getElementById('ru-prog-pct').textContent = Math.round(pct) + '%'
+  document.getElementById('ru-prog-label').textContent = label
+}
+
+function toggleRUAuth() {
+  const on = document.getElementById('ru-use-cookie').checked
+  document.getElementById('ru-cookie-block').style.display = on ? 'flex' : 'none'
+  document.getElementById('ru-cookie-block').style.flexDirection = 'column'
+}
+
+function renderRUResults() {
+  const list  = document.getElementById('ru-result-list')
+  const all   = [...state_ru.items, ...state_ru.fileQueue.filter(f => f.status !== 'pending')]
+  document.getElementById('ru-result-count').textContent = all.filter(x => x.status === 'done').length
+  if (!all.length) {
+    list.innerHTML = '<div class="empty-list">Hasil muncul di sini setelah proses</div>'
+    return
+  }
+  list.innerHTML = all.map((item, i) => {
+    const idStr  = item.id || item.name || '?'
+    const newStr = item.newId ? `→ ${item.newId}` : ''
+    const dlBtn  = item.file
+      ? `<span class="result-copy" onclick="ruDownloadSingle(${i})" title="Download">⬇</span>`
+      : ''
+    const cpBtn  = item.newId
+      ? `<span class="result-copy" onclick="copyText('${item.newId}')" title="Copy new ID">📋</span>`
+      : ''
+    return `
+      <div class="result-item">
+        <span class="result-id" style="font-size:11px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${idStr}">${idStr}</span>
+        <span class="result-type">[${item.type || '?'}]</span>
+        <span class="result-new-id" style="font-size:11px">${newStr}</span>
+        <span class="id-status status-${item.status}">${item.status}</span>
+        ${dlBtn}${cpBtn}
+      </div>`
+  }).join('')
+}
+
+// ── FETCH PRIVAT ASSET (multi-method) ─────────────────────────
+// Method 1: Cookie via proxy → assetdelivery/v1/asset
+// Method 2: Open Cloud API  → asset download endpoint
+// Method 3: CDN publik fallback
+async function fetchPrivateAsset(assetId, cookie, apikey, proxyUrl) {
+  const errors = []
+
+  // M1: Cookie Auth via assetdelivery (butuh proxy untuk CORS)
+  if (cookie && proxyUrl) {
+    try {
+      const target = `https://assetdelivery.roblox.com/v1/asset/?id=${assetId}`
+      const url    = proxyUrl.replace(/\/$/, '') + '/' + target
+      const res    = await fetch(url, {
+        headers: {
+          'Cookie': `.ROBLOSECURITY=${cookie}`,
+          'User-Agent': 'Roblox/WinInet',
+        }
+      })
+      if (res.ok) {
+        const blob = await res.blob()
+        if (blob.size > 100) {
+          logRU(`✓ M1 Cookie+Proxy: ${assetId} (${formatSize(blob.size)})`, 'ok')
+          return { blob, method: 'cookie-proxy' }
+        }
+      }
+      errors.push(`M1 HTTP ${res.status}`)
+    } catch (e) { errors.push('M1: ' + e.message) }
+  }
+
+  // M2: Cookie Auth tanpa proxy (kemungkinan CORS block di browser biasa,
+  //     tapi bisa work jika dijalankan dari ekstensi/sameorigin proxy)
+  if (cookie && !proxyUrl) {
+    try {
+      const res = await fetch(`https://assetdelivery.roblox.com/v1/asset/?id=${assetId}`, {
+        credentials: 'include',
+        headers: { 'User-Agent': 'Roblox/WinInet' }
+      })
+      if (res.ok) {
+        const blob = await res.blob()
+        if (blob.size > 100) {
+          logRU(`✓ M2 Cookie Direct: ${assetId} (${formatSize(blob.size)})`, 'ok')
+          return { blob, method: 'cookie-direct' }
+        }
+      }
+      errors.push(`M2 HTTP ${res.status}`)
+    } catch (e) { errors.push('M2 CORS: ' + e.message) }
+  }
+
+  // M3: Open Cloud asset fetch (beta — tidak semua tipe support download via API)
+  if (apikey) {
+    try {
+      const proxyBase = proxyUrl ? proxyUrl.replace(/\/$/, '') + '/' : ''
+      const res = await fetch(`${proxyBase}https://apis.roblox.com/assets/v1/assets/${assetId}/content`, {
+        headers: { 'x-api-key': apikey }
+      })
+      if (res.ok) {
+        const blob = await res.blob()
+        if (blob.size > 100) {
+          logRU(`✓ M3 Open Cloud: ${assetId} (${formatSize(blob.size)})`, 'ok')
+          return { blob, method: 'open-cloud' }
+        }
+      }
+      errors.push(`M3 HTTP ${res.status}`)
+    } catch (e) { errors.push('M3: ' + e.message) }
+  }
+
+  // M4: CDN publik fallback (hanya untuk asset non-privat)
+  const cdnUrls = [
+    `https://assetdelivery.roblox.com/v1/asset/?id=${assetId}`,
+    `https://assetdelivery.roblox.com/v2/assetHash/${assetId}`,
+    `https://rbxcdn.roblox.com/rbxg/${assetId}`,
+  ]
+  for (const url of cdnUrls) {
+    try {
+      const target = proxyUrl ? proxyUrl.replace(/\/$/, '') + '/' + url : url
+      const res    = await fetch(target)
+      if (res.ok) {
+        const blob = await res.blob()
+        if (blob.size > 100) {
+          logRU(`✓ M4 CDN Publik: ${assetId} (${formatSize(blob.size)})`, 'ok')
+          return { blob, method: 'cdn-public' }
+        }
+      }
+    } catch (e) { /* try next */ }
+  }
+
+  throw new Error(`Semua method gagal: [${errors.join(' | ')}] — Asset privat butuh cookie + proxy yang valid`)
+}
+
+// ── REUPLOAD VIA OPEN CLOUD ────────────────────────────────────
+async function reuploadAsset(blob, filename, assetType, apikey, userId, groupId, useGroup, prefix) {
+  const baseName  = filename.replace(/\.[^.]+$/, '')
+  const randSufx  = Math.random().toString(36).slice(2, 7).toUpperCase()
+  const assetName = (prefix || 'REUP_') + baseName + '_' + randSufx
+
+  const creator = useGroup
+    ? { groupId: String(groupId) }
+    : { userId:  String(userId) }
+
+  const rblxTypeMap = {
+    audio:     'Audio',
+    animation: 'Animation',
+    image:     'Decal',
+    model:     'Model',
+  }
+
+  const meta = JSON.stringify({
+    assetType:        rblxTypeMap[assetType] || 'Audio',
+    displayName:      assetName,
+    description:      'Re-uploaded by AL STUDIO — Private Asset Tool',
+    creationContext:  { creator, expectedPrice: 0 },
+  })
+
+  const form = new FormData()
+  form.append('request',     new Blob([meta], { type: 'application/json' }))
+  form.append('fileContent', new File([blob], filename, { type: blob.type || 'application/octet-stream' }))
+
+  const proxyUrl  = document.getElementById('ru-proxy').value.trim()
+  const baseUrl   = 'https://apis.roblox.com/assets/v1/assets'
+  const endpoint  = proxyUrl ? proxyUrl.replace(/\/$/, '') + '/' + baseUrl : baseUrl
+  const timeout   = 15000
+  const ctrl      = new AbortController()
+  const timer     = setTimeout(() => ctrl.abort(), timeout)
+
+  let res
+  try {
+    res = await fetch(endpoint, {
+      method:  'POST',
+      headers: { 'x-api-key': apikey },
+      body:    form,
+      signal:  ctrl.signal,
+    })
+  } finally { clearTimeout(timer) }
+
+  const text = await res.text()
+  let data
+  try { data = JSON.parse(text) } catch { data = { raw: text } }
+
+  if (!res.ok) {
+    const msg = data?.message || data?.errors?.[0]?.message || text || res.statusText
+    throw new Error(`HTTP ${res.status} — ${msg}`)
+  }
+
+  // Poll async operation jika audio/animation
+  if (data.path && data.path.includes('operations')) {
+    logRU(`Operation queued: ${data.path} — polling...`, 'info')
+    return await pollOperation(data.path, apikey, timeout)
+  }
+  return data
+}
+
+// ── MAIN: START RE-UPLOAD FROM IDs ────────────────────────────
+async function startReupload() {
+  if (state_ru.running) return
+
+  const raw     = document.getElementById('ru-ids-input').value.trim()
+  const type    = document.getElementById('ru-type').value
+  const action  = document.getElementById('ru-action').value
+  const cookie  = document.getElementById('ru-cookie').value.trim()
+  const apikey  = document.getElementById('ru-apikey').value.trim()
+  const userId  = document.getElementById('ru-userid').value.trim()
+  const groupId = document.getElementById('ru-groupid').value.trim()
+  const useGroup= document.getElementById('ru-use-group').checked
+  const proxyUrl= document.getElementById('ru-proxy').value.trim()
+  const prefix  = document.getElementById('ru-prefix').value || 'REUP_'
+  const delay   = parseInt(document.getElementById('ru-delay').value) || 1500
+
+  if (!raw) { toast('Masukkan ID dulu', 'err'); return }
+  if ((action === 'reupload' || action === 'both') && !apikey) {
+    toast('API Key wajib diisi untuk re-upload', 'err'); return
+  }
+  if ((action === 'reupload' || action === 'both') && !userId && !groupId) {
+    toast('User ID atau Group ID wajib diisi', 'err'); return
+  }
+
+  const ids = raw.split(/[\n,;\s]+/).map(x => x.trim()).filter(x => x && !isNaN(x) && x.length > 4)
+  if (!ids.length) { toast('Tidak ada ID valid', 'err'); return }
+
+  state_ru.running = true
+  state_ru.items   = ids.map(id => ({ id, type, status: 'pending', file: null, newId: null, error: null }))
+  renderRUResults()
+  logRU(`Job dimulai — ${ids.length} IDs [${type}] action:${action}`, 'info')
+
+  for (let i = 0; i < state_ru.items.length; i++) {
+    const item = state_ru.items[i]
+    item.status = 'uploading'
+    renderRUResults()
+    setRUProgress((i / state_ru.items.length) * 100, `Processing ${item.id}...`)
+
+    try {
+      let blob     = null
+      let filename = `AL_${item.id}.${type === 'audio' ? 'ogg' : 'rbxm'}`
+
+      // FETCH PHASE
+      if (action === 'download' || action === 'both' || action === 'reupload') {
+        logRU(`Fetching asset ${item.id}...`, 'info')
+        try {
+          const result = await fetchPrivateAsset(item.id, cookie, apikey, proxyUrl)
+          blob         = result.blob
+          item.file    = { blob, name: filename, type, method: result.method }
+          logRU(`✓ Fetched: ${item.id} via ${result.method} (${formatSize(blob.size)})`, 'ok')
+        } catch (fetchErr) {
+          logRU(`⚠ Fetch gagal: ${fetchErr.message}`, 'warn')
+          // Build rbxm wrapper dari ID saja
+          const wrapper  = buildRBXMFromBlob(item.id, type, null)
+          const wBlob    = new Blob([wrapper], { type: 'text/xml' })
+          filename       = `AL_${item.id}.rbxm`
+          blob           = wBlob
+          item.file      = { blob: wBlob, name: filename, type, method: 'wrapper' }
+          logRU(`  → Fallback ke .rbxm wrapper untuk ID: ${item.id}`, 'info')
+        }
+      }
+
+      // REUPLOAD PHASE
+      if ((action === 'reupload' || action === 'both') && blob) {
+        logRU(`Re-uploading: ${item.id} → Roblox [${type}]...`, 'info')
+        try {
+          const res = await reuploadAsset(blob, filename, type, apikey, userId, groupId, useGroup, prefix)
+          const newId = res?.assetId || res?.response?.assetId || res?.id || '(processing)'
+          item.newId  = String(newId)
+          item.status = 'done'
+          logRU(`✓ Re-uploaded: ${item.id} → ${newId}`, 'ok')
+          state.results.push({ orig: item.id, type, newId: String(newId) })
+        } catch (upErr) {
+          item.status = 'error'
+          item.error  = upErr.message
+          logRU(`✗ Upload error: ${upErr.message}`, 'err')
+          if (upErr.message.includes('403')) logRU('  → API Key scope: Assets:Write diperlukan', 'warn')
+          if (upErr.message.includes('401')) logRU('  → API Key invalid / expired', 'warn')
+          if (upErr.message.includes('429')) logRU('  → Rate limited — naikkan delay', 'warn')
+        }
+      } else if (action === 'download') {
+        item.status = 'done'
+        item.newId  = item.id + ' (lokal)'
+      }
+
+    } catch (e) {
+      item.status = 'error'
+      item.error  = e.message
+      logRU(`✗ Error ID ${item.id}: ${e.message}`, 'err')
+    }
+
+    renderRUResults()
+    await sleep(delay)
+  }
+
+  setRUProgress(100, 'Complete!')
+  const done = state_ru.items.filter(x => x.status === 'done').length
+  const fail = state_ru.items.filter(x => x.status === 'error').length
+  logRU(`Complete — ${done} OK, ${fail} gagal`, done > 0 ? 'ok' : 'err')
+  toast(`Re-upload selesai — ${done} berhasil, ${fail} gagal`, done > 0 ? 'ok' : 'err')
+  state_ru.running = false
+
+  if ((action === 'download' || action === 'both') && done > 0) {
+    await sleep(400)
+    downloadAllReuploadRBXM()
+  }
+}
+
+// ── START RE-UPLOAD FROM FILE DROP ────────────────────────────
+async function startReuploadFiles() {
+  if (state_ru.running) return
+  const apikey  = document.getElementById('ru-apikey').value.trim()
+  const userId  = document.getElementById('ru-userid').value.trim()
+  const groupId = document.getElementById('ru-groupid').value.trim()
+  const useGroup= document.getElementById('ru-use-group').checked
+  const type    = document.getElementById('ru-type').value
+  const prefix  = document.getElementById('ru-prefix').value || 'REUP_'
+  const delay   = parseInt(document.getElementById('ru-delay').value) || 1500
+
+  if (!apikey) { toast('API Key wajib untuk upload file', 'err'); return }
+  if (!userId && !groupId) { toast('User ID atau Group ID wajib diisi', 'err'); return }
+  if (!state_ru.fileQueue.length) { toast('File queue kosong — drop file dulu', 'err'); return }
+
+  state_ru.running = true
+  logRU(`File upload job — ${state_ru.fileQueue.length} files [${type}]`, 'info')
+
+  for (let i = 0; i < state_ru.fileQueue.length; i++) {
+    const f = state_ru.fileQueue[i]
+    f.status = 'uploading'
+    renderRUFileQueue()
+    setRUProgress(((i + 1) / state_ru.fileQueue.length) * 100, `Uploading ${f.name}`)
+    logRU(`Uploading: ${f.name}`, 'info')
+
+    try {
+      const res   = await reuploadAsset(f.file, f.name, type, apikey, userId, groupId, useGroup, prefix)
+      const newId = res?.assetId || res?.response?.assetId || res?.id || '(processing)'
+      f.newId     = String(newId)
+      f.status    = 'done'
+      logRU(`✓ ${f.name} → ${newId}`, 'ok')
+      state.results.push({ orig: f.name, type, newId: String(newId) })
+    } catch (e) {
+      f.status = 'error'
+      logRU(`✗ ${f.name}: ${e.message}`, 'err')
+    }
+
+    renderRUFileQueue()
+    renderRUResults()
+    await sleep(delay)
+  }
+
+  setRUProgress(100, 'Complete!')
+  state_ru.running = false
+  toast('File upload selesai!', 'ok')
+}
+
+// ── FILE DROP ZONE ─────────────────────────────────────────────
+const ruDZ = document.getElementById('ru-dropzone')
+ruDZ.addEventListener('dragover',  e => { e.preventDefault(); ruDZ.classList.add('dragover') })
+ruDZ.addEventListener('dragleave', () => ruDZ.classList.remove('dragover'))
+ruDZ.addEventListener('drop', e => {
+  e.preventDefault(); ruDZ.classList.remove('dragover')
+  handleRUFiles(e.dataTransfer.files)
+})
+document.getElementById('ru-file-input').addEventListener('change', e => handleRUFiles(e.target.files))
+
+function handleRUFiles(files) {
+  Array.from(files).forEach(f => {
+    if (!state_ru.fileQueue.find(x => x.name === f.name && x.size === f.size)) {
+      const type = detectTypeFromFile(f.name)
+      state_ru.fileQueue.push({ name: f.name, size: f.size, file: f, type, status: 'pending', newId: null })
+    }
+  })
+  renderRUFileQueue()
+  toast(`${files.length} file ditambahkan ke queue`, 'ok')
+  logRU(`${files.length} file di-drop: ${Array.from(files).map(f => f.name).join(', ')}`, 'info')
+}
+
+function detectTypeFromFile(name) {
+  const ext = name.split('.').pop().toLowerCase()
+  if (['mp3','ogg','wav','flac'].includes(ext)) return 'audio'
+  if (['rbxanim'].includes(ext)) return 'animation'
+  if (['png','jpg','jpeg','gif','bmp','webp'].includes(ext)) return 'image'
+  return 'model' // .rbxm default
+}
+
+function renderRUFileQueue() {
+  const list = document.getElementById('ru-file-queue')
+  if (!state_ru.fileQueue.length) {
+    list.innerHTML = '<div class="empty-list">Belum ada file di queue</div>'; return
+  }
+  list.innerHTML = state_ru.fileQueue.map((f, i) => `
+    <div class="id-item">
+      <span class="id-num" style="font-size:11px;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${f.name}">${f.name}</span>
+      <span class="id-name">${formatSize(f.size)}</span>
+      <span class="id-name" style="color:var(--blue2);font-size:10px">[${f.type}]</span>
+      ${f.newId ? `<span class="id-name" style="color:var(--success);font-family:'JetBrains Mono',monospace;font-size:10px">${f.newId}</span>` : ''}
+      <span class="id-status status-${f.status}">${f.status}</span>
+      <span class="id-remove" onclick="removeRUFile(${i})">✕</span>
+    </div>
+  `).join('')
+}
+
+function removeRUFile(i) { state_ru.fileQueue.splice(i, 1); renderRUFileQueue() }
+
+function clearReuploadQueue() {
+  state_ru.items     = []
+  state_ru.fileQueue = []
+  document.getElementById('ru-ids-input').value = ''
+  renderRUResults()
+  renderRUFileQueue()
+  setRUProgress(0, 'Idle')
+  toast('Queue cleared', 'info')
+}
+
+// ── DOWNLOAD HELPERS ──────────────────────────────────────────
+function ruDownloadSingle(i) {
+  const all  = [...state_ru.items, ...state_ru.fileQueue.filter(f => f.status !== 'pending')]
+  const item = all[i]
+  if (!item?.file?.blob) { toast('Tidak ada file untuk didownload', 'err'); return }
+  const url = URL.createObjectURL(item.file.blob)
+  const a   = document.createElement('a')
+  a.href     = url
+  a.download = item.file.name
+  a.click()
+  URL.revokeObjectURL(url)
+  toast(`Downloaded: ${item.file.name}`, 'ok')
+}
+
+function downloadAllReuploadRBXM() {
+  const all  = [...state_ru.items, ...state_ru.fileQueue]
+  const done = all.filter(x => x.status === 'done' && x.file?.blob)
+  if (!done.length) { toast('Tidak ada file untuk didownload', 'err'); return }
+  done.forEach((item, i) => {
+    setTimeout(() => {
+      const url = URL.createObjectURL(item.file.blob)
+      const a   = document.createElement('a')
+      a.href     = url
+      a.download = item.file.name
+      a.click()
+      URL.revokeObjectURL(url)
+    }, i * 400)
+  })
+  toast(`Downloading ${done.length} files...`, 'ok')
+}
+
+function exportReuploadIDs() {
+  const all  = [...state_ru.items, ...state_ru.fileQueue]
+  const done = all.filter(x => x.status === 'done' && x.newId)
+  if (!done.length) { toast('Tidak ada ID hasil', 'err'); return }
+  const txt  = done.map(x => `${x.id || x.name} → ${x.newId}`).join('\n')
+  downloadText(txt, 'al_studio_reupload_ids.txt')
+  toast('ID exported', 'ok')
+}
+
+// ── TEST COOKIE AUTH ──────────────────────────────────────────
+async function testCookieAuth() {
+  const cookie  = document.getElementById('ru-cookie').value.trim()
+  const proxyUrl= document.getElementById('ru-proxy').value.trim()
+  if (!cookie)  { toast('Masukkan cookie .ROBLOSECURITY dulu', 'err'); return }
+
+  logRU('Testing cookie auth...', 'info')
+  toast('Testing cookie auth...', 'info')
+
+  try {
+    // Test via users/v1/users/authenticated — butuh cookie auth
+    const baseUrl = 'https://users.roblox.com/v1/users/authenticated'
+    const url     = proxyUrl ? proxyUrl.replace(/\/$/, '') + '/' + baseUrl : baseUrl
+    const res     = await fetch(url, {
+      headers: {
+        'Cookie':     `.ROBLOSECURITY=${cookie}`,
+        'User-Agent': 'Roblox/WinInet',
+      },
+      credentials: 'omit',
+    })
+    const data = await res.json().catch(() => ({}))
+    if (res.ok && data.name) {
+      logRU(`✓ Cookie valid — User: ${data.name} (ID: ${data.id})`, 'ok')
+      toast(`✓ Cookie valid — ${data.name}`, 'ok')
+    } else if (res.status === 401) {
+      logRU('✗ Cookie expired atau tidak valid (401)', 'err')
+      toast('Cookie tidak valid (401)', 'err')
+    } else if (res.status === 0 || res.type === 'opaque') {
+      logRU('⚠ CORS block — coba tambahkan Proxy URL yang valid', 'warn')
+      toast('CORS block — butuh proxy', 'warn')
+    } else {
+      logRU(`⚠ HTTP ${res.status} — ${data?.message || 'Unknown'}`, 'warn')
+      toast(`HTTP ${res.status}`, 'warn')
+    }
+  } catch (e) {
+    if (e.message.includes('fetch') || e.message.includes('CORS')) {
+      logRU('⚠ CORS block di browser — gunakan Proxy URL', 'warn')
+      logRU('  Contoh proxy: https://corsproxy.io/?', 'info')
+      toast('CORS block — butuh proxy URL', 'warn')
+    } else {
+      logRU('✗ Error: ' + e.message, 'err')
+      toast('Error: ' + e.message, 'err')
+    }
+  }
+}
+
+// ── INIT ──────────────────────────────────────────────────────
+addLog('AL STUDIO Asset Spoofer v2.0 loaded', 'ok')
+addLog('Ready — configure API key to enable uploads', 'info')
+</script>
+</body>
+</html>
